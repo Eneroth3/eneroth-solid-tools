@@ -314,8 +314,8 @@ module EneSolidTools
       
       #Only intersect raw geometry, save time and avoid unwanted edges.
       ents0.intersect_with false, ent0.transformation, temp_group.entities, temp_group.transformation, true, ents1.to_a.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) }
-      ents1.intersect_with false, ent1.transformation, temp_group.entities, temp_group.transformation, true, ents0.to_a.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) }
-      
+      ents1.intersect_with false, ent0.transformation, temp_group.entities, temp_group.transformation, true, ents0.to_a.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) }
+
       move_into ent0, temp_group, true
       move_into ent1, temp_group
       
