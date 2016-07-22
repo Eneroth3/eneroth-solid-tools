@@ -2,7 +2,7 @@
 
 # Coded because I needed them in another plugin.
 
-module Ene_SolidTools
+module EneSolidTools
 
   # Public: Various solid operations.
   #

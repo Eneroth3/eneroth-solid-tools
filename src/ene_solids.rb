@@ -39,7 +39,7 @@
 require "sketchup.rb"
 require "extensions.rb"
 
-module Ene_SolidTools
+module EneSolidTools
 
   # Public: General extension information.
   AUTHOR      = "Julia Christina Eneroth"
