@@ -323,24 +323,51 @@ module EneSolidTools
       
     end
 
-    # Internal: Return a point that is somewhere inside a face, not on its edge or
-    # corner.
+    # Internal: Fin d arbitrary point inside face, not on its edge or corner.
     #
     # face - The face to find a point in.
     #
     # Returns a Point3d object.
     def self.point_in_face(face)
+    
+      # Sometimes invalid faces gets created when intersecting.
+      # These are removed when validity check run.
+      return false if face.area == 0
 
+      # First find centroid and check if is within face (not in a hole).
+      centroid = face.vertices.inject(ORIGIN.dup) { |c, v|
+        c.x += v.position.x
+        c.y += v.position.y
+        c.z += v.position.z
+        c
+      }
+      centroid.x /= face.vertices.size
+      centroid.y /= face.vertices.size
+      centroid.z /= face.vertices.size
+      
+      return centroid if face.classify_point(centroid) == Sketchup::Face::PointInside
+      
+      #puts "could not use centroid because it wasn't inside face. Get point close to convex corner instead,"
+      
+      # Find points by combining 3 adjacent corners.
+      # If middle corner is convex point should be inside face (or in a hole).
       face.vertices.each_with_index do |v, i|
-        p_this = v.position
-        p_before = face.vertices[i-1].position#Use third points to allow for triangles.
-        p_2nd_before = face.vertices[i-2].position
-        p = Geom.linear_combination 0.5, p_this, 0.5, p_2nd_before
-        p = Geom.linear_combination 0.5, p, 0.5, p_before
-        return p if face.classify_point(p) == Sketchup::Face::PointInside
+        c0 = v.position
+        c1 = face.vertices[i-1].position
+        c2 = face.vertices[i-2].position
+        p  = Geom.linear_combination 0.95, c0, 0.05, c2
+        p  = Geom.linear_combination 0.95, p,  0.05, c1
+        
+        cp = face.classify_point(p)
+        #face.parent.entities.add_cpoint p
+        return p if cp == Sketchup::Face::PointInside
       end
 
-      false#Should never reach this line. IF false is returned algorithm is wrong.
+      #puts "Could not find any point within face :( ."      
+      
+      # This line should never be reached.
+      # If it does code isn't functioning as intended :( .
+      false
     
     end
     
@@ -353,6 +380,10 @@ module EneSolidTools
       to_remove_in_ents.select do |f|
         next unless f.is_a? Sketchup::Face
         point = point_in_face f
+        unless point
+          #puts "Could not find an arbitrary point in #{f} (area: #{f.area}). Ignoring face."
+          next
+        end
         point.transform! to_search_in.transformation
         #Do not verify if solid actually is solid each iteration.
         #It may not be a solid any longer if loose edges were created from nested
