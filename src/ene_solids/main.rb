@@ -454,7 +454,27 @@ module Ene_SolidTools
       
     end
     
-  end#class
+  end
+  
+  # Internal: Reload whole extension (except loader) without littering
+  # console. Inspired by ThomTohm's method.
+  #
+  # Returns nothing.
+  def self.reload
+
+    # Hide warnings for already defined constants.
+    old_verbose = $VERBOSE
+    $VERBOSE = nil
+
+    # Load
+    Dir.glob(File.join(PLUGIN_DIR, "*.rb")).each { |f| load f }
+
+    $VERBOSE = old_verbose
+
+    nil
+
+  end
+
 
   # Internal: Class to base different UI tools on since most code is the same.
   class BaseTool

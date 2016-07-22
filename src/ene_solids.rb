@@ -36,20 +36,37 @@
 #   1.0.1
 #     Limited use to Sketchup Pro.
 
-#Load the normal support files
 require "sketchup.rb"
 require "extensions.rb"
 
 module Ene_SolidTools
 
-PLUGIN_ROOT = File.dirname(__FILE__).gsub("\\", "/") unless defined?(self::PLUGIN_ROOT)
+  # Public: General extension information.
+  AUTHOR      = "Julia Christina Eneroth"
+  CONTACT     = "#{AUTHOR} at eneroth3@gmail.com"
+  COPYRIGHT   = "#{AUTHOR} #{Time.now.year}"
+  DESCRIPTION =
+    "Solids union, subtract and trim tool. Designed to be more consistent to "\
+    "other Sketchup tools than Sketchup's native solid tools."
+  ID          =  File.basename __FILE__, ".rb"
+  NAME        = "Eneroth Solid Tools"
+  VERSION     = "1.0.1"
+  
+  # Public: Minimum Sketchup version required to run plugin.
+  REQUIRED_SU_VERSION = "15"
 
-#Extension
-ex = SketchupExtension.new("Eneroth Solid Tools", File.join(PLUGIN_ROOT, "ene_solids/main.rb"))
-ex.description = "Solids union, subtract and trim tool. Designed to be more consistent to other Sketchup tools than Sketchup's own solid tools."
-ex.version = "1.0.1"
-ex.copyright = "Julia Christina (eneroth3) Eneroth 2014"
-ex.creator = "Julia Christina (eneroth3) Eneroth"
-Sketchup.register_extension ex, true
+  # Public: Path to loader file's directory.
+  PLUGIN_ROOT = File.expand_path(File.dirname(__FILE__))
 
-end#module
+  # Public: Path to plugin's own directory.
+  PLUGIN_DIR = File.join PLUGIN_ROOT, ID
+
+  # Create Extension once required gems are installed.
+  ex = SketchupExtension.new(NAME, File.join(PLUGIN_DIR, "main"))
+  ex.description = DESCRIPTION
+  ex.version     = VERSION
+  ex.copyright   = COPYRIGHT
+  ex.creator     = AUTHOR
+  Sketchup.register_extension ex, true
+
+end
