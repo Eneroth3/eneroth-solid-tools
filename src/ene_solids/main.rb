@@ -66,7 +66,7 @@ module EneSolidTools
       point.transform! group_or_component.transformation.inverse
 
       #Use somewhat random vector to reduce risk of ray touching solid without
-      #penetrating it.
+      #intersecting it.
       vector = Geom::Vector3d.new 234, 1343, 345
       line = [point, vector]
       intersections = []
@@ -81,7 +81,7 @@ module EneSolidTools
         return return_value_when_on_face if [Sketchup::Face::PointInside, Sketchup::Face::PointOnEdge, Sketchup::Face::PointOnVertex].include? clasify_point
 
         #Don't count face if ray tangents it.
-        next if point.on_plane?(f.plane) && point.offset(vector).on_plane?(f.plane)
+        next if f.normal.perpendicular? vector
 
         intersection = Geom.intersect_line_plane line, plane
         next unless intersection
@@ -96,18 +96,19 @@ module EneSolidTools
         next unless [Sketchup::Face::PointInside, Sketchup::Face::PointOnEdge, Sketchup::Face::PointOnVertex].include? classify_intersection
 
         #Remember intersection so intersections can be counted.
-        #Save intersection as array so duplicated intersections fro where ray meets edge between faces can be removed and counted as one.
-        intersections << intersection.to_a
+        intersections << intersection
       end
 
       #If ray hits an edge 2 faces have intersections for the same point.
       #Only counts as hitting the mesh once though.
       #Duplicated point could both mean ray enters/leaves solid through an edge, but also that ray tangents an edge of the solid.
       #Use a quite random ray direction to heavily decrease the risk of ray touch solid.
-      intersections.uniq!  
+      intersections = intersections.inject([]){ |a, p0| a.any?{ |p| p == p0 } ? a : a << p0 }
+
+      #ents.add_text intersections.size.to_s, point
 
       #Return
-      intersections.length%2==1#odd?
+      intersections.size%2==1#odd?
 
     end
 
@@ -397,14 +398,14 @@ module EneSolidTools
       faces
 
 
-    end#def
+    end
 
     # Internal: Remove all loose edges binding less than 2 edges.
     def self.purge_edges(ents)
 
       ents.erase_entities ents.select { |e|
         next unless e.is_a? Sketchup::Edge
-        next unless e.faces.length < 2
+        next unless e.faces.size < 2
         true
       }
       
@@ -474,7 +475,6 @@ module EneSolidTools
     nil
 
   end
-
 
   # Internal: Class to base different UI tools on since most code is the same.
   class BaseTool
