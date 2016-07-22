@@ -170,6 +170,8 @@ module EneSolidTools
       all_coplanar = find_coplanar_edges original_ents  
       new_coplanar = all_coplanar - old_coplanar
       original_ents.erase_entities new_coplanar
+      
+      weld_hack original.entities
 
       original.model.commit_operation if wrap_in_operator
 
@@ -247,6 +249,8 @@ module EneSolidTools
       #kept even if they are outside the expected resulting solid.
       #Remove all edges not binding 2 faces to get rid of them.
       purge_edges original_ents
+      
+      weld_hack original.entities
 
       original.model.commit_operation if wrap_in_operator
 
@@ -483,6 +487,41 @@ module EneSolidTools
         verts = f0.vertices
         !verts.any? { |v| f1.classify_point(v.position) == Sketchup::Face::PointNotOnPlane}
       end
+      
+    end
+    
+    # Internal: Sometimes naked overlapping un-welded edges are formed in SU.
+    # This method tried to weld them.
+    #
+    # entities - The entities object to weld in.
+    #
+    # returns nothing
+    def self.weld_hack(entities)
+    
+      unless is_solid? entities.parent
+        naked_edges = naked_edges entities
+                
+        temp_group = entities.add_group
+        naked_edges.each do |e|
+          temp_group.entities.add_line e.start, e.end
+        end
+        temp_group.explode
+      end
+      
+      nil
+    
+    end
+    
+    # Internal: Find edges that's only binding one face.
+    #
+    # entities - An Entities object or an Array of Entity objects.
+    #
+    # Returns an Array of Edges.
+    def self.naked_edges(entities)
+    
+      entities = entities.to_a
+      
+      entities.select { |e| e.is_a?(Sketchup::Edge) && e.faces.size == 1 }
       
     end
     
