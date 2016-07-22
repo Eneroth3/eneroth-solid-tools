@@ -34,7 +34,10 @@
 #     First Release
 #
 #   1.0.1
-#     Limited use to Sketchup Pro.
+#     Limited use to Sketchup Pro (due to EW terms and conditions).
+#
+#   2.0.2
+#     Fixed bug in intersecting volumes.
 
 require "sketchup.rb"
 require "extensions.rb"
@@ -50,11 +53,8 @@ module EneSolidTools
     "other Sketchup tools than Sketchup's native solid tools."
   ID          =  File.basename __FILE__, ".rb"
   NAME        = "Eneroth Solid Tools"
-  VERSION     = "1.0.1"
+  VERSION     = "1.0.2"
   
-  # Public: Minimum Sketchup version required to run plugin.
-  REQUIRED_SU_VERSION = "15"
-
   # Public: Path to loader file's directory.
   PLUGIN_ROOT = File.expand_path(File.dirname(__FILE__))
 
