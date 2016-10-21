@@ -70,7 +70,7 @@ module EneSolidTools
       vector = Geom::Vector3d.new 234, 1343, 345
       line = [point, vector]
       intersections = []
-      
+
       ents = entities_from_group_or_componet group_or_component
       ents.each do |f|
         next unless f.is_a?(Sketchup::Face)
@@ -135,7 +135,7 @@ module EneSolidTools
       #Make groups unique so no other instances of are altered.
       #Group.make_unique is for some reason deprecated, change name instead.
       original.name += "" if original.is_a? Sketchup::Group
-      
+
       #Create new group for to_add so components sharing same definition
       #aren't affected.
       temp_group = original.parent.entities.add_group
@@ -144,7 +144,7 @@ module EneSolidTools
 
       original_ents = entities_from_group_or_componet original
       to_add_ents = entities_from_group_or_componet to_add
-      
+
       old_coplanar = find_coplanar_edges original_ents
       old_coplanar += find_coplanar_edges to_add_ents
 
@@ -162,15 +162,15 @@ module EneSolidTools
 
       #Move to_add into original_ents and explode it.
       move_into original, to_add
-      
+
       #Purge edges no longer not binding 2 edges.
       purge_edges original_ents
 
       #Remove co-planar edges that occurred from the intersection (not those that already existed)
-      all_coplanar = find_coplanar_edges original_ents  
+      all_coplanar = find_coplanar_edges original_ents
       new_coplanar = all_coplanar - old_coplanar
       original_ents.erase_entities new_coplanar
-      
+
       weld_hack original.entities
 
       original.model.commit_operation if wrap_in_operator
@@ -216,7 +216,7 @@ module EneSolidTools
 
       original_ents = entities_from_group_or_componet original
       to_subtract_ents = entities_from_group_or_componet to_subtract
-      
+
       old_coplanar = find_coplanar_edges original_ents
       old_coplanar += find_coplanar_edges to_subtract_ents
 
@@ -231,7 +231,7 @@ module EneSolidTools
       corresponding.each_with_index { |v, i| i%2==0 ? to_remove << v : to_remove1 << v }#even?
       original_ents.erase_entities to_remove
       to_subtract_ents.erase_entities to_remove1
-      
+
       #Reverse all faces in to_subtract
       to_subtract_ents.each { |f| f.reverse! if f.is_a? Sketchup::Face }
 
@@ -243,13 +243,13 @@ module EneSolidTools
       all_coplanar = find_coplanar_edges original_ents
       new_coplanar = all_coplanar - old_coplanar
       original_ents.erase_entities new_coplanar
-      
+
       #Purge edges no longer binding 2 faces.
       #Faces that where in the same plane in the different solids may have been
       #kept even if they are outside the expected resulting solid.
       #Remove all edges not binding 2 faces to get rid of them.
       purge_edges original_ents
-      
+
       weld_hack original.entities
 
       original.model.commit_operation if wrap_in_operator
@@ -293,7 +293,7 @@ module EneSolidTools
     #
     # Returns true if result is a solid, false if something went wrong.
     def self.intersect(original, to_intersect, wrap_in_operator = true)
-    
+
       #Check if both groups/components are solid.
       return if !is_solid?(original) || !is_solid?(to_intersect)
 
@@ -317,19 +317,19 @@ module EneSolidTools
 
       #Double intersect so intersection edges appear in both contexts.
       intersect_wrapper original, to_intersect
-      
+
       # Remove faces in original that aren't inside to_intersect
       # and faces in to_intersect that aren't inside original.
       to_remove = find_faces original, to_intersect, false, false
       to_remove1 = find_faces to_intersect, original, false, false
-      corresponding = find_corresponding_faces original, to_intersect, true
+      corresponding = find_corresponding_faces original, to_intersect, false
       corresponding.each_with_index { |v, i| i%2==0 ? to_remove << v : to_remove1 << v }#even?
       original_ents.erase_entities to_remove
       to_intersect_ents.erase_entities to_remove1
-      
+
       #Move to_intersect into original_ents and explode it.
       move_into original, to_intersect
-            
+
       #Purge edges no longer not binding 2 edges.
       purge_edges original_ents
 
@@ -344,12 +344,12 @@ module EneSolidTools
 
       #Return whether result is solid or not
       is_solid? original
-    
+
     end
-    
+
     #Following methods are used internally and may be subject to change between
     #releases. Typically names may change.
-    
+
     # Internal: Get the Entities object for either a Group or CompnentInstance.
     #
     # group_or_component - The group or ComponentInstance object.
@@ -380,19 +380,19 @@ module EneSolidTools
       #Both solids must be in the same drawing context which they are moved to
       #in union and subtract method.
       temp_group = ent0.parent.entities.add_group
-      
+
       #ents0.intersect_with false, ent0.transformation, temp_group.entities, temp_group.transformation, true, ent1
       #ents1.intersect_with false, ent1.transformation, temp_group.entities, temp_group.transformation, true, ent0
-      
+
       #Only intersect raw geometry, save time and avoid unwanted edges.
       ents0.intersect_with false, ent0.transformation, temp_group.entities, temp_group.transformation, true, ents1.to_a.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) }
       ents1.intersect_with false, ent0.transformation, temp_group.entities, temp_group.transformation, true, ents0.to_a.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) }
 
       move_into ent0, temp_group, true
       move_into ent1, temp_group
-      
+
       nil
-      
+
     end
 
     # Internal: Fin d arbitrary point inside face, not on its edge or corner.
@@ -401,7 +401,7 @@ module EneSolidTools
     #
     # Returns a Point3d object.
     def self.point_in_face(face)
-    
+
       # Sometimes invalid faces gets created when intersecting.
       # These are removed when validity check run.
       return false if face.area == 0
@@ -416,11 +416,11 @@ module EneSolidTools
       centroid.x /= face.vertices.size
       centroid.y /= face.vertices.size
       centroid.z /= face.vertices.size
-      
+
       return centroid if face.classify_point(centroid) == Sketchup::Face::PointInside
-      
+
       #puts "could not use centroid because it wasn't inside face. Get point close to convex corner instead,"
-      
+
       # Find points by combining 3 adjacent corners.
       # If middle corner is convex point should be inside face (or in a hole).
       face.vertices.each_with_index do |v, i|
@@ -429,26 +429,26 @@ module EneSolidTools
         c2 = face.vertices[i-2].position
         p  = Geom.linear_combination 0.95, c0, 0.05, c2
         p  = Geom.linear_combination 0.95, p,  0.05, c1
-        
+
         cp = face.classify_point(p)
         #face.parent.entities.add_cpoint p
         return p if cp == Sketchup::Face::PointInside
       end
 
-      #puts "Could not find any point within face :( ."      
-      
+      #puts "Could not find any point within face :( ."
+
       # This line should never be reached.
       # If it does code isn't functioning as intended :( .
       false
-    
+
     end
-    
+
     # Internal: Find faces to remove based on their position relative to the
     # other solid.
     def self.find_faces(to_search_in, reference, inside, on_surface)
 
       to_remove_in_ents = entities_from_group_or_componet to_search_in
-      
+
       to_remove_in_ents.select do |f|
         next unless f.is_a? Sketchup::Face
         point = point_in_face f
@@ -465,7 +465,7 @@ module EneSolidTools
       end
 
     end
-    
+
     # Internal: Find faces that exists with same location in both contexts.
     #
     # same_orientation - true to only return those oriented the same direction,
@@ -511,7 +511,7 @@ module EneSolidTools
         next unless e.faces.size < 2
         true
       }
-      
+
     end
 
     # Internal: Merges groups/components.
@@ -522,21 +522,21 @@ module EneSolidTools
       #Properties like material and attributes will be lost but should not be used
       #anyway because group/component is exploded.
       #References to entities will be kept. Hooray!
-      
+
       destination_ents = entities_from_group_or_componet destination
-      
+
       to_move_def = to_move.is_a?(Sketchup::Group) ? to_move.entities.parent : to_move.definition
-      
+
       trans_target = destination.transformation
       trans_old = to_move.transformation
-      
+
       trans = trans_old*(trans_target.inverse)
       trans = trans_target.inverse*trans*trans_target#Transform transformation so it's relative to local and not global axes.
-      
+
       temp = destination_ents.add_instance to_move_def, trans
       to_move.erase! unless keep
       temp.explode
-      
+
     end
 
     # Internal: Find all co-planar edges in entities with both faces having same
@@ -548,16 +548,16 @@ module EneSolidTools
         next unless e.faces.length == 2
         f0 = e.faces[0]
         f1 = e.faces[1]
-        
+
         #next unless f0.material == f1.material#Prevented subtract from functioning as intended.
         #next unless f0.layer == f1.layer
-        
+
         verts = f0.vertices
         !verts.any? { |v| f1.classify_point(v.position) == Sketchup::Face::PointNotOnPlane}
       end
-      
+
     end
-    
+
     # Internal: Sometimes naked overlapping un-welded edges are formed in SU.
     # This method tried to weld them.
     #
@@ -565,36 +565,36 @@ module EneSolidTools
     #
     # returns nothing
     def self.weld_hack(entities)
-    
+
       unless is_solid? entities.parent
         naked_edges = naked_edges entities
-                
+
         temp_group = entities.add_group
         naked_edges.each do |e|
           temp_group.entities.add_line e.start, e.end
         end
         temp_group.explode
       end
-      
+
       nil
-    
+
     end
-    
+
     # Internal: Find edges that's only binding one face.
     #
     # entities - An Entities object or an Array of Entity objects.
     #
     # Returns an Array of Edges.
     def self.naked_edges(entities)
-    
+
       entities = entities.to_a
-      
+
       entities.select { |e| e.is_a?(Sketchup::Edge) && e.faces.size == 1 }
-      
+
     end
-    
+
   end
-  
+
   # Internal: Reload whole extension (except loader) without littering
   # console. Inspired by ThomTohm's method.
   #
@@ -618,9 +618,9 @@ module EneSolidTools
   class BaseTool
 
     def run_or_activate
-    
+
       @not_a_solid_error = "Something went wrong :/\n\nOutput is not a solid."
-    
+
       #If 2 solids and nothing else is selected, perform operation on those.
       #Otherwise activate tool and let user click them one at a time and also
       #define which one is one for asymmetrical operations.
@@ -636,9 +636,9 @@ module EneSolidTools
         v0 = bb0.width * bb0.depth * bb0.height
         v1 = bb1.width * bb1.depth * bb1.height
         ent0, ent1 = ent1, ent0 if v1 > v0
-        
+
         status = Solids.send @method_name, ent0, ent1
-        
+
         if status
           #Tell user operations has been done.
           #Tell user to activate tool without a selection to chose order of
@@ -648,15 +648,15 @@ module EneSolidTools
         else
           UI.messagebox @not_a_solid_error unless status
         end
-        
+
       else
 
         Sketchup.active_model.select_tool self
 
       end
-      
+
     end
-    
+
     def activate
 
         #Activate tool.
@@ -665,7 +665,7 @@ module EneSolidTools
         self.reset
 
     end
-    
+
     def onSetCursor
 
       UI.set_cursor @cursor
@@ -805,7 +805,7 @@ module EneSolidTools
       cmd.tooltip = "Subtract"
       cmd.status_bar_text = "Subtract one solid group or component from another."
       tb.add_item cmd
-      
+
       cmd = UI::Command.new("Trim") { TrimTool.new.run_or_activate }
       cmd.large_icon = "trim.png"
       cmd.small_icon = "trim_small.png"
@@ -814,7 +814,7 @@ module EneSolidTools
       tb.add_item cmd
 
       UI.start_timer(0.1, false){ tb.restore }#Use timer as workaround for bug 2902434.
-    
+
     else
       UI.messagebox "Eneroth Solids Tools are for legal reasons only available for Sketchup Pro."
     end
