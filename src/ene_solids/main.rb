@@ -149,7 +149,7 @@ module EneSolidTools
       old_coplanar += find_coplanar_edges to_add_ents
 
       #Double intersect so intersection edges appear in both contexts.
-      intersect original, to_add
+      intersect_wrapper original, to_add
 
       #Remove faces that are inside the solid of the other group.
       #Also remove faces that exists in both groups and have opposite orientation.
@@ -221,7 +221,7 @@ module EneSolidTools
       old_coplanar += find_coplanar_edges to_subtract_ents
 
       #Double intersect so intersection edges appear in both contexts.
-      intersect original, to_subtract
+      intersect_wrapper original, to_subtract
 
       #Remove edges in original that are inside to_subtract and
       #edges in to_subtract that are outside original.
@@ -276,7 +276,75 @@ module EneSolidTools
 
       #Call subtract method with keep_to_subtract set to true.
       subtract(original, to_trim, wrap_in_operator, true)
+
+    end
+
+    # Public: Intersect one solid group/component with another.
+    #
+    # The original group/component keeps its material, layer, attributes etc.
+    # Raw geometry inside both groups/components keep their material layer
+    # attributes etc.
+    #
+    # original         - The original group/component.
+    # to_intersect     - The group/component to intersect the original with.
+    # wrap_in_operator - True to add an operation so all changes can be undone in
+    #                    one step. Set to false when called from custom script
+    #                    that already uses an operator.
+    #
+    # Returns true if result is a solid, false if something went wrong.
+    def self.intersect(original, to_intersect, wrap_in_operator = true)
+    
+      #Check if both groups/components are solid.
+      return if !is_solid?(original) || !is_solid?(to_intersect)
+
+      original.model.start_operation "Intersect", true if wrap_in_operator
+
+      #Make groups unique so no other instances of are altered.
+      #Group.make_unique is for some reason deprecated, change name instead.
+      original.name += "" if original.is_a? Sketchup::Group
+
+      #Create new group for to_intersect so components sharing same definition
+      #aren't affected.
+      temp_group = original.parent.entities.add_group
+      move_into temp_group, to_intersect
+      to_intersect = temp_group
+
+      original_ents = entities_from_group_or_componet original
+      to_intersect_ents = entities_from_group_or_componet to_intersect
+
+      old_coplanar = find_coplanar_edges original_ents
+      old_coplanar += find_coplanar_edges to_intersect_ents
+
+      #Double intersect so intersection edges appear in both contexts.
+      intersect_wrapper original, to_intersect
       
+      # Remove faces in original that aren't inside to_intersect
+      # and faces in to_intersect that aren't inside original.
+      to_remove = find_faces original, to_intersect, false, false
+      to_remove1 = find_faces to_intersect, original, false, false
+      corresponding = find_corresponding_faces original, to_intersect, true
+      corresponding.each_with_index { |v, i| i%2==0 ? to_remove << v : to_remove1 << v }#even?
+      original_ents.erase_entities to_remove
+      to_intersect_ents.erase_entities to_remove1
+      
+      #Move to_intersect into original_ents and explode it.
+      move_into original, to_intersect
+            
+      #Purge edges no longer not binding 2 edges.
+      purge_edges original_ents
+
+      #Remove co-planar edges that occurred from the intersection (not those that already existed)
+      all_coplanar = find_coplanar_edges original_ents
+      new_coplanar = all_coplanar - old_coplanar
+      original_ents.erase_entities new_coplanar
+
+      weld_hack original.entities
+
+      original.model.commit_operation if wrap_in_operator
+
+      #Return whether result is solid or not
+      is_solid? original
+    
     end
     
     #Following methods are used internally and may be subject to change between
@@ -302,7 +370,7 @@ module EneSolidTools
     # ent1 - The other groups or components to intersect.
     #
     #Returns nothing.
-    def self.intersect(ent0, ent1)
+    def self.intersect_wrapper(ent0, ent1)
 
       ents0 = entities_from_group_or_componet ent0
       ents1 = entities_from_group_or_componet ent1
