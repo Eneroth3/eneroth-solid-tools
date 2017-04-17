@@ -41,10 +41,14 @@ module EneSolidTools
     if Sketchup.is_pro?
 
       menu = UI.menu("Tools").add_submenu(EXTENSION.name)
-      menu.add_item("Union") { UnionTool.perform_or_activate }
-      menu.add_item("Subtract") { SubtractTool.perform_or_activate }
-      menu.add_item("Trim") { TrimTool.perform_or_activate }
-      menu.add_item("Intersect") { IntersectTool.perform_or_activate }
+      item = menu.add_item("Union") { UnionTool.perform_or_activate }
+      menu.set_validation_proc(item) { UnionTool.active? ? MF_CHECKED : MF_UNCHECKED }
+      item = menu.add_item("Subtract") { SubtractTool.perform_or_activate }
+      menu.set_validation_proc(item) { SubtractTool.active? ? MF_CHECKED : MF_UNCHECKED }
+      item = menu.add_item("Trim") { TrimTool.perform_or_activate }
+      menu.set_validation_proc(item) { TrimTool.active? ? MF_CHECKED : MF_UNCHECKED }
+      item = menu.add_item("Intersect") { IntersectTool.perform_or_activate }
+      menu.set_validation_proc(item) { IntersectTool.active? ? MF_CHECKED : MF_UNCHECKED }
 
       tb = UI::Toolbar.new(EXTENSION.name)
 
@@ -53,6 +57,7 @@ module EneSolidTools
       cmd.small_icon = "union_small.png"
       cmd.tooltip = "Union"
       cmd.status_bar_text = "Add one solid group or component to another."
+      cmd.set_validation_proc { UnionTool.active? ? MF_CHECKED : MF_UNCHECKED }
       tb.add_item cmd
 
       cmd = UI::Command.new("Subtract") { SubtractTool.perform_or_activate }
@@ -60,6 +65,7 @@ module EneSolidTools
       cmd.small_icon = "subtract_small.png"
       cmd.tooltip = "Subtract"
       cmd.status_bar_text = "Subtract one solid group or component from another."
+      cmd.set_validation_proc { SubtractTool.active? ? MF_CHECKED : MF_UNCHECKED }
       tb.add_item cmd
 
       cmd = UI::Command.new("Trim") { TrimTool.perform_or_activate }
@@ -67,6 +73,7 @@ module EneSolidTools
       cmd.small_icon = "trim_small.png"
       cmd.tooltip = "Trim"
       cmd.status_bar_text = "Trim away one solid group or component from another."
+      cmd.set_validation_proc { TrimTool.active? ? MF_CHECKED : MF_UNCHECKED }
       tb.add_item cmd
 
       cmd = UI::Command.new("Intersect") { IntersectTool.perform_or_activate }
@@ -74,6 +81,7 @@ module EneSolidTools
       cmd.small_icon = "intersect_small.png"
       cmd.tooltip = "Intersect"
       cmd.status_bar_text = "Find intersection between solid groups or components."
+      cmd.set_validation_proc { IntersectTool.active? ? MF_CHECKED : MF_UNCHECKED }
       tb.add_item cmd
 
       UI.start_timer(0.1, false){ tb.restore }#Use timer as workaround for bug 2902434.

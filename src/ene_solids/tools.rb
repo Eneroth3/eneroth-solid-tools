@@ -8,6 +8,11 @@ module EneSolidTools
 
     NOT_SOLID_ERROR = "Something went wrong :/\n\nOutput is not a solid."
 
+    # Since SketchUp's built checking of tools in menus seems to fail for tools
+    # that are subclasses the active tool's class has to be tracked by the
+    # plugin.
+    @@active_tool_class = nil
+
     # Perform solid operation on selection if it consists of exactly two solids
     # or activate tool.
     def self.perform_or_activate
@@ -21,7 +26,8 @@ module EneSolidTools
         secondary, primary = selection.to_a.sort_by { |e| bb = e.bounds; bb.width * bb.depth * bb.height}
 
         if Solids.send(self::METHOD_NAME, primary, secondary)
-          # Set status text inside 0 timer to override status set by XXXXXXX. # TODO: Check why.
+          # Set status text inside 0 timer to override status set by hovering
+          # the toolbar button.
           UI.start_timer(0, false){ Sketchup.status_text = self::STATUS_DONE }
         else
           UI.messagebox(NOT_SOLID_ERROR)
@@ -32,12 +38,22 @@ module EneSolidTools
       end
     end
 
+    # Check whether this is the active tool.
+    def self.active?
+      @@active_tool_class == self
+    end
+
     # SketchUp Tool Interface
 
     def activate
       @ph = Sketchup.active_model.active_view.pick_helper
       @cursor = UI.create_cursor(File.join(EXTENSION_DIR, self.class::CURSOR_FILENAME), 2, 2)
+      @@active_tool_class = self.class
       reset
+    end
+
+    def deactivate(view)
+      @@active_tool_class = nil
     end
 
     def onLButtonDown(flags, x, y, view)
