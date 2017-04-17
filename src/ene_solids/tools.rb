@@ -16,8 +16,8 @@ module EneSolidTools
     # Perform solid operation on selection if it consists of two or more solids
     # and nothing else, otherwise activate tool.
     def self.perform_or_activate
-
-      selection = Sketchup.active_model.selection
+      model = Sketchup.active_model
+      selection = model.selection
       if selection.size > 1 && selection.all? { |e| Solids.is_solid?(e) }
 
         # Sort by bounding box volume since no order is given.
@@ -25,14 +25,16 @@ module EneSolidTools
         # user must activate the tool.
         solids = selection.to_a.sort_by { |e| bb = e.bounds; bb.width * bb.depth * bb.height }.reverse
 
-        # TODO: Create operator here. Commit after or on failure.
+        model.start_operation(self::OPERATOR_NAME, true)
         primary = solids.shift
         until solids.empty?
-          if !Solids.send(self::METHOD_NAME, primary, solids.shift)
+          if !Solids.send(self::METHOD_NAME, primary, solids.shift, false)
+            model.commit_operation
             UI.messagebox(NOT_SOLID_ERROR)
             return
           end
         end
+        model.commit_operation
 
         # Set status text inside 0 timer to override status set by hovering
         # the toolbar button.
@@ -73,10 +75,12 @@ module EneSolidTools
       else
         return if picked == @primary
         secondary = picked
-        if !Solids.send(self.class::METHOD_NAME, @primary, secondary)
+        view.model.start_operation(self.class::OPERATOR_NAME, true)
+        if !Solids.send(self.class::METHOD_NAME, @primary, secondary, false)
           UI.messagebox(NOT_SOLID_ERROR)
           reset
         end
+        view.model.commit_operation
       end
     end
 
@@ -121,6 +125,7 @@ module EneSolidTools
     STATUS_PRIMARY   = "Click original solid group/component to add to."
     STATUS_SECONDARY = "Click other solid group/component to add."# TODO: Add Esc = Drop selection/primary/something.
     STATUS_DONE      = "Done."
+    OPERATOR_NAME    = "Union"
     METHOD_NAME      = :union
   end
 
@@ -129,6 +134,7 @@ module EneSolidTools
     STATUS_PRIMARY   = "Click original solid group/component to subtract from."
     STATUS_SECONDARY = "Click other solid group/component to subtract."
     STATUS_DONE      = "Done. By instead activating tool without a selection you can chose what to subtract from what."
+    OPERATOR_NAME    = "Subtract"
     METHOD_NAME      = :subtract
   end
 
@@ -137,6 +143,7 @@ module EneSolidTools
     STATUS_PRIMARY   = "Click original solid group/component to trim."
     STATUS_SECONDARY = "Click other solid group/component to trim away."
     STATUS_DONE      = "Done. By instead activating tool without a selection you can chose what to trim from what."
+    OPERATOR_NAME    = "Trim"
     METHOD_NAME      = :trim
   end
 
@@ -145,6 +152,7 @@ module EneSolidTools
     STATUS_PRIMARY   = "Click original solid group/component to intersect."
     STATUS_SECONDARY = "Click other solid group/component intersect with."
     STATUS_DONE      = "Done. By instead activating tool without a selection you can chose what solid to modify."
+    OPERATOR_NAME    = "Intersect"
     METHOD_NAME      = :intersect
   end
 
