@@ -7,23 +7,30 @@ module EneSolidTools
   Sketchup.require(File.join(EXTENSION_DIR, "solids"))
   Sketchup.require(File.join(EXTENSION_DIR, "tools"))
 
-  # Internal: Reload whole extension (except loader) without littering
+  # Reload whole extension (except loader) without littering
   # console. Inspired by ThomTohm's method.
+  # Only works before extension has been scrambled.
+  #
+  # clear_console - Clear console from previous content too (default: false)
+  # undo_last     - Undo last operation in model (default: false).
   #
   # Returns nothing.
-  def self.reload
+  def self.reload(clear_console = false, undo_last = false)
 
     # Hide warnings for already defined constants.
-    old_verbose = $VERBOSE
+    verbose = $VERBOSE
     $VERBOSE = nil
 
-    # Load
     Dir.glob(File.join(EXTENSION_DIR, "*.rb")).each { |f| load(f) }
+    $VERBOSE = verbose
 
-    $VERBOSE = old_verbose
+    # Use a timer to make call to method itself register to console.
+    # Otherwise the user cannot use up arrow to repeat command.
+    UI.start_timer(0) { SKETCHUP_CONSOLE.clear } if clear_console
+
+    Sketchup.undo if undo_last
 
     nil
-
   end
 
   unless file_loaded?(__FILE__)
