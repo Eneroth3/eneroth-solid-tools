@@ -13,25 +13,30 @@ module EneSolidTools
     # plugin.
     @@active_tool_class = nil
 
-    # Perform solid operation on selection if it consists of exactly two solids
-    # or activate tool.
+    # Perform solid operation on selection if it consists of two or more solids
+    # and nothing else, otherwise activate tool.
     def self.perform_or_activate
 
       selection = Sketchup.active_model.selection
-      if selection.length == 2 && selection.all? { |e| Solids.is_solid?(e) }
+      if selection.size > 1 && selection.all? { |e| Solids.is_solid?(e) }
 
         # Sort by bounding box volume since no order is given.
         # To manually define the what solid to modify and what to modify with
         # user must activate the tool.
-        secondary, primary = selection.to_a.sort_by { |e| bb = e.bounds; bb.width * bb.depth * bb.height}
+        solids = selection.to_a.sort_by { |e| bb = e.bounds; bb.width * bb.depth * bb.height }.reverse
 
-        if Solids.send(self::METHOD_NAME, primary, secondary)
-          # Set status text inside 0 timer to override status set by hovering
-          # the toolbar button.
-          UI.start_timer(0, false){ Sketchup.status_text = self::STATUS_DONE }
-        else
-          UI.messagebox(NOT_SOLID_ERROR)
+        # TODO: Create operator here. Commit after or on failure.
+        primary = solids.shift
+        until solids.empty?
+          if !Solids.send(self::METHOD_NAME, primary, solids.shift)
+            UI.messagebox(NOT_SOLID_ERROR)
+            return
+          end
         end
+
+        # Set status text inside 0 timer to override status set by hovering
+        # the toolbar button.
+        UI.start_timer(0, false){ Sketchup.status_text = self::STATUS_DONE }
 
       else
         Sketchup.active_model.select_tool(new)
