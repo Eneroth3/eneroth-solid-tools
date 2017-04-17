@@ -179,7 +179,7 @@ module EneSolidTools
       new_coplanar = all_coplanar - old_coplanar
       primary_ents.erase_entities(new_coplanar)
 
-      weld_hack(primary.entities)
+      weld_hack(primary_ents)
 
       primary.model.commit_operation if wrap_in_operator
 
@@ -261,7 +261,7 @@ module EneSolidTools
       new_coplanar = all_coplanar - old_coplanar
       primary_ents.erase_entities(new_coplanar)
 
-      weld_hack(primary.entities)
+      weld_hack(primary_ents)
 
       primary.model.commit_operation if wrap_in_operator
 
@@ -353,7 +353,7 @@ module EneSolidTools
       new_coplanar = all_coplanar - old_coplanar
       primary_ents.erase_entities(new_coplanar)
 
-      weld_hack(primary.entities)
+      weld_hack(primary_ents)
 
       primary.model.commit_operation if wrap_in_operator
 
