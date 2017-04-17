@@ -1,7 +1,5 @@
 # Eneroth solid Tools
 
-# Copyright Julia Christina Eneroth, eneroth3@gmail.com
-
 module EneSolidTools
 
   class BaseTool

@@ -1,7 +1,5 @@
 # Eneroth solid Tools
 
-# Copyright Julia Christina Eneroth, eneroth3@gmail.com
-
 module EneSolidTools
 
   if Sketchup.version.to_i < REQUIRED_SU_VERSION

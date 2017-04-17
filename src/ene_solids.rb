@@ -1,7 +1,5 @@
 # Eneroth Solid Tools
 
-# Copyright Julia Christina Eneroth, eneroth3@gmail.com
-
 require "sketchup.rb"
 require "extensions.rb"
 
