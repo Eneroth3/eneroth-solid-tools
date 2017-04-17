@@ -52,9 +52,10 @@ module EneSolidTools
       else
         return if picked == @primary
         secondary = picked
-        status = Solids.send(self.class::METHOD_NAME, @primary, secondary)
-        UI.messagebox(NOT_SOLID_ERROR) unless status
-        reset
+        if !Solids.send(self.class::METHOD_NAME, @primary, secondary)
+          UI.messagebox(NOT_SOLID_ERROR)
+          reset
+        end
       end
     end
 
@@ -63,6 +64,7 @@ module EneSolidTools
       # Consistent to rotation, move and scale tool.
       selection = Sketchup.active_model.selection
       selection.clear
+      selection.add(@primary) if @primary
 
       @ph.do_pick(x, y)
       picked = @ph.best_picked
@@ -86,6 +88,7 @@ module EneSolidTools
     private
 
     def reset
+      Sketchup.active_model.selection.clear
       Sketchup.status_text = self.class::STATUS_PRIMARY
       @primary = nil
     end
@@ -95,7 +98,7 @@ module EneSolidTools
   class UnionTool < BaseTool
     CURSOR_FILENAME  = "cursor_union.png"
     STATUS_PRIMARY   = "Click original solid group/component to add to."
-    STATUS_SECONDARY = "Click other solid group/component to add."
+    STATUS_SECONDARY = "Click other solid group/component to add."# TODO: Add Esc = Drop selection/primary/something.
     STATUS_DONE      = "Done."
     METHOD_NAME      = :union
   end
