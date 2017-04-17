@@ -57,32 +57,32 @@ module EneSolidTools
       tb = UI::Toolbar.new(EXTENSION.name)
 
       cmd = UI::Command.new("Union") {UnionTool.perform_or_activate }
-      cmd.large_icon = "union.png"
-      cmd.small_icon = "union_small.png"
+      cmd.large_icon = "images/union.png"
+      cmd.small_icon = "images/union_small.png"
       cmd.tooltip = "Union"
       cmd.status_bar_text = "Add one solid group or component to another."
       cmd.set_validation_proc { UnionTool.active? ? MF_CHECKED : MF_UNCHECKED }
       tb.add_item cmd
 
       cmd = UI::Command.new("Subtract") { SubtractTool.perform_or_activate }
-      cmd.large_icon = "subtract.png"
-      cmd.small_icon = "subtract_small.png"
+      cmd.large_icon = "images/subtract.png"
+      cmd.small_icon = "images/subtract_small.png"
       cmd.tooltip = "Subtract"
       cmd.status_bar_text = "Subtract one solid group or component from another."
       cmd.set_validation_proc { SubtractTool.active? ? MF_CHECKED : MF_UNCHECKED }
       tb.add_item cmd
 
       cmd = UI::Command.new("Trim") { TrimTool.perform_or_activate }
-      cmd.large_icon = "trim.png"
-      cmd.small_icon = "trim_small.png"
+      cmd.large_icon = "images/trim.png"
+      cmd.small_icon = "images/trim_small.png"
       cmd.tooltip = "Trim"
       cmd.status_bar_text = "Trim away one solid group or component from another."
       cmd.set_validation_proc { TrimTool.active? ? MF_CHECKED : MF_UNCHECKED }
       tb.add_item cmd
 
       cmd = UI::Command.new("Intersect") { IntersectTool.perform_or_activate }
-      cmd.large_icon = "intersect.png"
-      cmd.small_icon = "intersect_small.png"
+      cmd.large_icon = "images/intersect.png"
+      cmd.small_icon = "images/intersect_small.png"
       cmd.tooltip = "Intersect"
       cmd.status_bar_text = "Find intersection between solid groups or components."
       cmd.set_validation_proc { IntersectTool.active? ? MF_CHECKED : MF_UNCHECKED }

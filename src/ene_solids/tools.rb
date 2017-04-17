@@ -52,7 +52,7 @@ module EneSolidTools
 
     def activate
       @ph = Sketchup.active_model.active_view.pick_helper
-      @cursor = UI.create_cursor(File.join(EXTENSION_DIR, self.class::CURSOR_FILENAME), 2, 2)
+      @cursor = UI.create_cursor(File.join(EXTENSION_DIR, "images", self.class::CURSOR_FILENAME), 2, 2)
       @@active_tool_class = self.class
       reset
     end
