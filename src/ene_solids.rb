@@ -7,12 +7,14 @@ require "extensions.rb"
 
 module EneSolidTools
 
+  EXTENSION_DIR = File.join(File.dirname(__FILE__), File.basename(__FILE__, ".rb"))
+
   EXTENSION = SketchupExtension.new(
     "Eneroth Solid Tools",
-    File.join(File.dirname(__FILE__), File.basename(__FILE__, ".rb"), "main")
+    File.join(EXTENSION_DIR, "main")
   )
   EXTENSION.creator     = "Julia Christina Eneroth"
-  EXTENSION.description = 
+  EXTENSION.description =
     "Solid union, subtract and trim tool. Designed to be more consistent to "\
     "other SketchUp tools than SketchUp's native solid tools."
   EXTENSION.version     = "1.1.0"

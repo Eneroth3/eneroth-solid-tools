@@ -4,8 +4,8 @@
 
 module EneSolidTools
 
-  Sketchup.require(File.join(File.dirname(__FILE__), "solids"))
-  Sketchup.require(File.join(File.dirname(__FILE__), "tools"))
+  Sketchup.require(File.join(EXTENSION_DIR, "solids"))
+  Sketchup.require(File.join(EXTENSION_DIR, "tools"))
 
   # Internal: Reload whole extension (except loader) without littering
   # console. Inspired by ThomTohm's method.
@@ -18,7 +18,7 @@ module EneSolidTools
     $VERBOSE = nil
 
     # Load
-    Dir.glob(File.join(File.dirname(__FILE__), "*.rb")).each { |f| load(f) }
+    Dir.glob(File.join(EXTENSION_DIR, "*.rb")).each { |f| load(f) }
 
     $VERBOSE = old_verbose
 
