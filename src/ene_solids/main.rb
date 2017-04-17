@@ -4,6 +4,12 @@
 
 module EneSolidTools
 
+  if Sketchup.version.to_i < REQUIRED_SU_VERSION
+    msg = "#{EXTENSION.name} requires SketchUp 20#{REQUIRED_SU_VERSION} or later to run."
+    UI.messagebox(msg)
+    raise msg
+  end
+
   Sketchup.require(File.join(EXTENSION_DIR, "solids"))
   Sketchup.require(File.join(EXTENSION_DIR, "tools"))
 
@@ -83,8 +89,6 @@ module EneSolidTools
       cmd.status_bar_text = "Find intersection between solid groups or components."
       cmd.set_validation_proc { IntersectTool.active? ? MF_CHECKED : MF_UNCHECKED }
       tb.add_item cmd
-
-      UI.start_timer(0.1, false){ tb.restore }#Use timer as workaround for bug 2902434.
 
     else
       UI.messagebox("Eneroth Solids Tools in Extension Warehouse is available for SketchUp Pro.")

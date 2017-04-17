@@ -36,9 +36,9 @@ module EneSolidTools
     # Returns Boolean.
     def self.is_solid?(container)
       return unless [Sketchup::Group, Sketchup::ComponentInstance].include?(container.class)
-      ents = entities_from_group_or_componet(container)
+      ents = entities(container)
 
-      !ents.any? { |e| e.is_a?(Sketchup::Edge) && e.faces.length%2 == 1 }#odd?
+      !ents.any? { |e| e.is_a?(Sketchup::Edge) && e.faces.length.odd? }
     end
 
     # Check whether Point3d is inside, outside or the surface of solid.
@@ -78,7 +78,7 @@ module EneSolidTools
       vector = Geom::Vector3d.new(234, 1343, 345)
       ray = [point, vector]
 
-      intersection_points = entities_from_group_or_componet(container).map do |face|
+      intersection_points = entities(container).map do |face|
         next unless face.is_a?(Sketchup::Face)
 
         # If point is on face of solid, return value specified for that case.
@@ -109,7 +109,7 @@ module EneSolidTools
       # when having the same coordinates.
       intersection_points = intersection_points.inject([]){ |a, p0| a.any?{ |p| p == p0 } ? a : a << p0 }
 
-      intersection_points.size%2 == 1#odd?
+      intersection_points.size.odd?
     end
 
     # Unite one container with another.
@@ -148,8 +148,8 @@ module EneSolidTools
       move_into(temp_group, secondary)
       secondary = temp_group
 
-      primary_ents = entities_from_group_or_componet(primary)
-      secondary_ents = entities_from_group_or_componet(secondary)
+      primary_ents = entities(primary)
+      secondary_ents = entities(secondary)
 
       # Remember co-planar edges for later.
       # TODO: Are these objects kept in SU2017?
@@ -164,7 +164,7 @@ module EneSolidTools
       to_remove = find_faces(primary, secondary, true, false)
       to_remove1 = find_faces(secondary, primary, true, false)
       corresponding = find_corresponding_faces(primary, secondary, false)
-      corresponding.each_with_index { |v, i| i%2==0 ? to_remove << v : to_remove1 << v }#even?
+      corresponding.each_with_index { |v, i| i.even? ? to_remove << v : to_remove1 << v }
       primary_ents.erase_entities(to_remove)
       secondary_ents.erase_entities(to_remove1)
 
@@ -226,8 +226,8 @@ module EneSolidTools
       move_into(temp_group, secondary, keep_secondary)
       secondary = temp_group
 
-      primary_ents = entities_from_group_or_componet(primary)
-      secondary_ents = entities_from_group_or_componet(secondary)
+      primary_ents = entities(primary)
+      secondary_ents = entities(secondary)
 
       # Remember co-planar edges for later.
       # TODO: Are these objects kept in SU2017?
@@ -243,7 +243,7 @@ module EneSolidTools
       to_remove = find_faces(primary, secondary, true, false)
       to_remove1 = find_faces(secondary, primary, false, false)
       corresponding = find_corresponding_faces(primary, secondary, true)
-      corresponding.each_with_index { |v, i| i%2==0 ? to_remove << v : to_remove1 << v }#even?
+      corresponding.each_with_index { |v, i| i.even? ? to_remove << v : to_remove1 << v }
       primary_ents.erase_entities(to_remove)
       secondary_ents.erase_entities(to_remove1)
 
@@ -322,8 +322,8 @@ module EneSolidTools
       move_into(temp_group, secondary)
       secondary = temp_group
 
-      primary_ents = entities_from_group_or_componet(primary)
-      secondary_ents = entities_from_group_or_componet(secondary)
+      primary_ents = entities(primary)
+      secondary_ents = entities(secondary)
 
       # Remember co-planar edges for later.
       # TODO: Are these objects kept in SU2017?
@@ -338,7 +338,7 @@ module EneSolidTools
       to_remove = find_faces(primary, secondary, false, false)
       to_remove1 = find_faces(secondary, primary, false, false)
       corresponding = find_corresponding_faces(primary, secondary, false)
-      corresponding.each_with_index { |v, i| i%2==0 ? to_remove << v : to_remove1 << v }#even?
+      corresponding.each_with_index { |v, i| i.even? ? to_remove << v : to_remove1 << v }
       primary_ents.erase_entities(to_remove)
       secondary_ents.erase_entities(to_remove1)
 
@@ -363,14 +363,17 @@ module EneSolidTools
     private
 
     # Internal: Get the Entities object for either a Group or CompnentInstance.
+    # SU 2014 and lower doesn't support Group#definition.
     #
     # group_or_component - The group or ComponentInstance object.
     #
     # Returns an Entities object.
-    def self.entities_from_group_or_componet(group_or_component)
-      return group_or_component.entities if group_or_component.is_a?(Sketchup::Group)
-
-      group_or_component.definition.entities
+    def self.entities(group_or_component)
+      if group_or_component.is_a?(Sketchup::Group)
+        group_or_component.entities
+      else
+        group_or_component.definition.entities
+      end
     end
 
     # Internal: Intersect solids and get intersection edges in both solids.
@@ -381,8 +384,8 @@ module EneSolidTools
     #Returns nothing.
     def self.intersect_wrapper(ent0, ent1)
 
-      ents0 = entities_from_group_or_componet(ent0)
-      ents1 = entities_from_group_or_componet(ent1)
+      ents0 = entities(ent0)
+      ents1 = entities(ent1)
 
       #Intersect twice to get coplanar faces.
       #Copy the intersection geometry to both solids.
@@ -435,7 +438,7 @@ module EneSolidTools
     # Internal: Find faces to remove based on their position relative to the
     # other solid.
     def self.find_faces(source, reference, inside, on_surface)
-      entities_from_group_or_componet(source).select do |f|
+      entities(source).select do |f|
         next unless f.is_a?(Sketchup::Face)
         point = point_in_face(f)
         next unless point
@@ -454,16 +457,13 @@ module EneSolidTools
     # Returns an array of faces, every second being in each drawing context.
     def self.find_corresponding_faces(ent0, ent1, same_orientation)
 
-      ents0 = entities_from_group_or_componet(ent0)
-      ents1 = entities_from_group_or_componet(ent1)
-
       faces = []
 
-      ents0.each do |f0|
+      entities(ent0).each do |f0|
         next unless f0.is_a?(Sketchup::Face)
         normal0 = f0.normal.transform(ent0.transformation)
         points0 = f0.vertices.map { |v| v.position.transform(ent0.transformation) }
-        ents1.each do |f1|
+        entities(ent1).each do |f1|
           next unless f1.is_a?(Sketchup::Face)
           normal1 = f1.normal.transform(ent1.transformation)
           next unless normal0.parallel?(normal1)
@@ -498,7 +498,7 @@ module EneSolidTools
       #anyway because group/component is exploded.
       #References to entities will be kept. Hooray!
 
-      destination_ents = entities_from_group_or_componet destination
+      destination_ents = entities destination
 
       to_move_def = to_move.is_a?(Sketchup::Group) ? to_move.entities.parent : to_move.definition
 
