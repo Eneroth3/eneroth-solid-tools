@@ -116,4 +116,12 @@ module EneSolidTools
     METHOD_NAME      = :trim
   end
 
+  class IntersectTool < BaseTool
+    CURSOR_FILENAME  = "cursor_intersect.png"
+    STATUS_PRIMARY   = "Click original solid group/component to intersect."
+    STATUS_SECONDARY = "Click other solid group/component intersect with."
+    STATUS_DONE      = "Done. By instead activating tool without a selection you can chose what solid to modify."
+    METHOD_NAME      = :intersect
+  end
+
 end

@@ -44,6 +44,7 @@ module EneSolidTools
       menu.add_item("Union") { UnionTool.perform_or_activate }
       menu.add_item("Subtract") { SubtractTool.perform_or_activate }
       menu.add_item("Trim") { TrimTool.perform_or_activate }
+      menu.add_item("Intersect") { IntersectTool.perform_or_activate }
 
       tb = UI::Toolbar.new(EXTENSION.name)
 
@@ -66,6 +67,13 @@ module EneSolidTools
       cmd.small_icon = "trim_small.png"
       cmd.tooltip = "Trim"
       cmd.status_bar_text = "Trim away one solid group or component from another."
+      tb.add_item cmd
+
+      cmd = UI::Command.new("Intersect") { IntersectTool.perform_or_activate }
+      cmd.large_icon = "intersect.png"
+      cmd.small_icon = "intersect_small.png"
+      cmd.tooltip = "Intersect"
+      cmd.status_bar_text = "Find intersection between solid groups or components."
       tb.add_item cmd
 
       UI.start_timer(0.1, false){ tb.restore }#Use timer as workaround for bug 2902434.
