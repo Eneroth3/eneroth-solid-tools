@@ -89,7 +89,7 @@ module EneSolidTools
       tb.add_item cmd
 
     else
-      UI.messagebox("Eneroth Solids Tools in Extension Warehouse is available for SketchUp Pro.")
+      UI.messagebox("Eneroth Solids Tools in Extension Warehouse is only available for SketchUp Pro.")
     end
   end
 

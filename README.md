@@ -1,10 +1,12 @@
-Menu: [b]Tools > Eneroth Solid Tools[/b].
+# General Plugin Info #
 
-[b]Union[/b]: Add one solid group or component to another.
+Menu: *Tools > Eneroth Solid Tools*.
 
-[b]Subtract[/b]: Subtract one solid group or component from another.
+*Union*: Add one solid group or component to another.
 
-[b]Trim[/b]: Trim away one solid group or component from another.
+*Subtract*: Subtract one solid group or component from another.
+
+*Trim*: Trim away one solid group or component from another.
 
 If the tools are activated with two or more solids selected, the plugin guesses the biggest one is the primary (the one to keep but modify) and the smaller are the secondary ones, deciding how the primary one is modified.
 
@@ -18,13 +20,36 @@ These tools, unlike the native solid tools, completely ignores nested groups and
 
 Any tool in the plugin be activated and used to check if a group or component is regarded a solid by the plugin, simply by hovering it and see if it gets highlighted.
 
-Change log
+April 2017 this extension was made open source, [available at GitHub](https://github.com/Eneroth3/Eneroth-Solid-Tools).
 
-  1.0.0 (2014-11-13)
-    First Release
+## Change Log ##
 
-   1.0.1 (2014-11-21)
-    Limited use to Sketchup Pro (due to EW terms and conditions).
+### 1.0.0 (2014-11-13) ###
+First Release
 
-   1.0.2 (2016-07-25)
-    Fixed bug in intersecting volumes.
+### 1.0.1 (2014-11-21) ###
+Limited use to Sketchup Pro (due to EW terms and conditions).
+
+### 1.0.2 (2016-07-25) ###
+Fixed bug in intersecting volumes.
+
+### 2.0.0 ###
+Made open source.
+Added intersect tool.
+Fixed toolbar icons not being checked when tool is active.
+Additional clicks keeps modifying what is already being modified (use Esc to select new solid to modify).
+Allow more than two selected solids to be operated on on tool activation.
+
+# Project Info #
+
+This project was started back in 2014 when I was still quite new to Ruby and
+programming in general. I've worked hard over a few days to clean up, refactor
+and style the code but it still has it oddities.
+
+Since I started this project, not to be a standalone plugin, but to be used
+inside other plugins of mine, and have had much use of it, I'm open sourcing it
+for other to use. I also know there are coders in the SketchUp community that
+are much better at making optimized and stable algorithms than I am so I hope
+making this project open source can also improve the project.
+
+The project follows [bbatsov's style guide for Ruby](https://github.com/bbatsov/ruby-style-guide).
