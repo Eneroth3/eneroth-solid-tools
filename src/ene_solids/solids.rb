@@ -9,27 +9,36 @@ module EneSolidTools
   # To use these operators in your own project, copy the whole class into it
   # and into your own namespace (module).
   #
+  # Face orientation is used on touching solids to determine whether faces
+  # should be removed or not. Make sure faces are correctly oriented before
+  # using.
+  #
   # Differences from native solid tools:
   #  * Preserves original Group/ComponentInstance object with its own material,
-  #    layer, attributes etc instead of creating a new one.
+  #    layer, attributes and other properties instead of creating a new one.
   #  * Preserves primitives inside groups/components with their own layers,
-  #    attributes etc instead of creating new ones that arbitrarily gets their
-  #    containers material added to them.
+  #    attributes and other properties instead of creating new ones.
   #  * Ignores nested geometry, a house is for instance still a solid you can
   #    cut away a part of even if there's a cut-opening window component in the
   #    wall.
   #  * Operations on components alters all instances as expected instead of
   #    creating a new unique Group (that's what context menu > Make Unique is
-  #    for! It's already included in SketchUp).
+  #    for).
   #  * Doesn't break material inheritance. If a Group/ComponentInstance itself
-  #    is painted faces wont be painted in its material.
+  #    is painted and child faces are not this will stay the same.
   #
-  # Face orientation is used on touching solids to determine whether faces should be removed or not.
-  # Make sure faces are correctly oriented before using.
+  # A, Eneroth3, is much more of a UX person than an algorithm person. Someone
+  # who is more of the latter might be able to optimize these operations and
+  # make them more stable.
+  #
+  # If you contribute to the project, please don't mess up these differences
+  # from the native solid tools. They are very much intended, and even the
+  # reason why this project was started in the first place.
   class Solids
 
-    # Check if a Group or ComponentInstance is solid. If every edge binds two
-    # faces it is considered a solid. Nested groups and components are ignored.
+    # Check if a Group or ComponentInstance is solid. If every edge binds an
+    # even faces it is considered a solid. Nested groups and components are
+    # ignored.
     #
     # container - The Group or ComponentInstance to test.
     #
@@ -38,7 +47,7 @@ module EneSolidTools
       return unless [Sketchup::Group, Sketchup::ComponentInstance].include?(container.class)
       ents = entities(container)
 
-      !ents.any? { |e| e.is_a?(Sketchup::Edge) && e.faces.length.odd? }
+      !ents.any? { |e| e.is_a?(Sketchup::Edge) && e.faces.size.odd? }
     end
 
     # Check whether Point3d is inside, outside or the surface of solid.
@@ -105,7 +114,7 @@ module EneSolidTools
       # recorded for the same point.
       # These needs to be reduced to one.
       #
-      # #make_unique can't be used on points since they are unique objects, evwn
+      # #make_unique can't be used on points since they are unique objects, even
       # when having the same coordinates.
       intersection_points = intersection_points.inject([]){ |a, p0| a.any?{ |p| p == p0 } ? a : a << p0 }
 
@@ -152,7 +161,7 @@ module EneSolidTools
       secondary_ents = entities(secondary)
 
       # Remember co-planar edges for later.
-      # TODO: Are these objects kept in SU2017?
+      # FIXME: References in secondary are lost in SU2017.
       old_coplanar = find_coplanar_edges(primary_ents)
       old_coplanar += find_coplanar_edges(secondary_ents)
 
@@ -230,7 +239,7 @@ module EneSolidTools
       secondary_ents = entities(secondary)
 
       # Remember co-planar edges for later.
-      # TODO: Are these objects kept in SU2017?
+      # FIXME: References in secondary are lost in SU2017.
       old_coplanar = find_coplanar_edges(primary_ents)
       old_coplanar += find_coplanar_edges(secondary_ents)
 
@@ -326,7 +335,7 @@ module EneSolidTools
       secondary_ents = entities(secondary)
 
       # Remember co-planar edges for later.
-      # TODO: Are these objects kept in SU2017?
+      # FIXME: References in secondary are lost in SU2017.
       old_coplanar = find_coplanar_edges(primary_ents)
       old_coplanar += find_coplanar_edges(secondary_ents)
 
@@ -491,12 +500,13 @@ module EneSolidTools
 
     # Internal: Merges groups/components.
     # Requires both groups/components to be in the same drawing context.
-    def self.move_into(destination, to_move, keep = false)#NOTE: FEATRUE: makes transformations in this method work when not in same drawing context and whole class will work when solids are in different contexts. check if native solids can do this, if not document it as one of the differences!
+    def self.move_into(destination, to_move, keep = false)
 
       #Create a new instance of the group/component.
       #Properties like material and attributes will be lost but should not be used
       #anyway because group/component is exploded.
       #References to entities will be kept. Hooray!
+      # Edit: As of SU 2017 references are not kept when exploding groups.
 
       destination_ents = entities destination
 
@@ -519,16 +529,12 @@ module EneSolidTools
     def self.find_coplanar_edges(ents)
 
       ents.select do |e|
-        next unless e.is_a?(Sketchup::Edge)#Next returns nil which evaluates to false, exuding this entity.
-        next unless e.faces.length == 2
-        f0 = e.faces[0]
-        f1 = e.faces[1]
+        next unless e.is_a?(Sketchup::Edge)
+        next unless e.faces.size == 2
 
-        #next unless f0.material == f1.material#Prevented subtract from functioning as intended.
-        #next unless f0.layer == f1.layer
-
-        verts = f0.vertices
-        !verts.any? { |v| f1.classify_point(v.position) == Sketchup::Face::PointNotOnPlane}
+        !e.faces[0].vertices.any? { |v|
+          e.faces[1].classify_point(v.position) == Sketchup::Face::PointNotOnPlane
+        }
       end
 
     end

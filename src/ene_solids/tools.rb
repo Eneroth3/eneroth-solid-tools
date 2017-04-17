@@ -122,17 +122,17 @@ module EneSolidTools
 
   class UnionTool < BaseTool
     CURSOR_FILENAME  = "cursor_union.png"
-    STATUS_PRIMARY   = "Click original solid group/component to add to."
-    STATUS_SECONDARY = "Click other solid group/component to add."# TODO: Add Esc = Drop selection/primary/something.
-    STATUS_DONE      = "Done."
+    STATUS_PRIMARY   = "Click primary solid group/component to add to."
+    STATUS_SECONDARY = "Click secondary solid group/component to add with. Esc = Select new primary solid."
+    STATUS_DONE      = "Done. By instead activating tool without a selection you can chose which component to alter."
     OPERATOR_NAME    = "Union"
     METHOD_NAME      = :union
   end
 
   class SubtractTool < BaseTool
     CURSOR_FILENAME  = "cursor_subtract.png"
-    STATUS_PRIMARY   = "Click original solid group/component to subtract from."
-    STATUS_SECONDARY = "Click other solid group/component to subtract."
+    STATUS_PRIMARY   = "Click primary solid group/component to subtract from."
+    STATUS_SECONDARY = "Click secondary solid group/component to subtract with. Esc = Select new primary solid."
     STATUS_DONE      = "Done. By instead activating tool without a selection you can chose what to subtract from what."
     OPERATOR_NAME    = "Subtract"
     METHOD_NAME      = :subtract
@@ -140,8 +140,8 @@ module EneSolidTools
 
   class TrimTool < BaseTool
     CURSOR_FILENAME  = "cursor_trim.png"
-    STATUS_PRIMARY   = "Click original solid group/component to trim."
-    STATUS_SECONDARY = "Click other solid group/component to trim away."
+    STATUS_PRIMARY   = "Click primary solid group/component to trim."
+    STATUS_SECONDARY = "Click secondary solid group/component to trim away. Esc = Select new primary solid."
     STATUS_DONE      = "Done. By instead activating tool without a selection you can chose what to trim from what."
     OPERATOR_NAME    = "Trim"
     METHOD_NAME      = :trim
@@ -150,7 +150,7 @@ module EneSolidTools
   class IntersectTool < BaseTool
     CURSOR_FILENAME  = "cursor_intersect.png"
     STATUS_PRIMARY   = "Click original solid group/component to intersect."
-    STATUS_SECONDARY = "Click other solid group/component intersect with."
+    STATUS_SECONDARY = "Click secondary solid group/component intersect with. Esc = Select new primary solid."
     STATUS_DONE      = "Done. By instead activating tool without a selection you can chose what solid to modify."
     OPERATOR_NAME    = "Intersect"
     METHOD_NAME      = :intersect
