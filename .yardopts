@@ -1,5 +1,6 @@
 --title "Eneroth Solid Tools"
 --no-private
+--plugin tomdoc
 src/**/*.rb
 
 LICENSE.md
