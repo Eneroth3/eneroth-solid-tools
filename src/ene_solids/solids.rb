@@ -25,7 +25,7 @@ module EneSolidTools
   #  * Doesn't break material inheritance. If a Group/ComponentInstance itself
   #    is painted and child faces are not this will stay the same.
   #
-  # A, Eneroth3, is much more of a UX person than an algorithm person. Someone
+  # I, Eneroth3, is much more of a UX person than an algorithm person. Someone
   # who is more of the latter might be able to optimize these operations and
   # make them more stable.
   #
