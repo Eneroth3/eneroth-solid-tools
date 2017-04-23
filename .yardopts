@@ -1,0 +1,5 @@
+--title "Eneroth Solid Tools"
+--no-private
+src/**/*.rb
+
+LICENSE.md
