@@ -401,8 +401,8 @@ module EneSolidTools
       temp_group = ent0.parent.entities.add_group
 
       #Only intersect raw geometry, save time and avoid unwanted edges.
-      ents0.intersect_with(false, ent0.transformation, temp_group.entities, temp_group.transformation, true, ents1.to_a.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) })
-      ents1.intersect_with(false, ent0.transformation, temp_group.entities, temp_group.transformation, true, ents0.to_a.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) })
+      ents0.intersect_with(false, ent0.transformation, temp_group.entities, IDENTITY, true, ents1.to_a.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) })
+      ents1.intersect_with(false, ent0.transformation.inverse, temp_group.entities, ent0.transformation.inverse, true, ents0.to_a.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) })
 
       move_into(ent0, temp_group, true)
       move_into(ent1, temp_group)
