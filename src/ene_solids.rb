@@ -5,12 +5,12 @@ require "extensions.rb"
 
 module EneSolidTools
 
-  EXTENSION_DIR = File.join(File.dirname(__FILE__), File.basename(__FILE__, ".rb"))
+  PLUGIN_DIR = File.join(File.dirname(__FILE__), File.basename(__FILE__, ".rb"))
   REQUIRED_SU_VERSION = 14
 
   EXTENSION = SketchupExtension.new(
     "Eneroth Solid Tools",
-    File.join(EXTENSION_DIR, "main")
+    File.join(PLUGIN_DIR, "main")
   )
   EXTENSION.creator     = "Julia Christina Eneroth"
   EXTENSION.description =
