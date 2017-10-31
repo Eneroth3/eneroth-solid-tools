@@ -108,6 +108,10 @@ module EneSolidTools
       Sketchup.status_text = !@primary ? self.class::STATUS_PRIMARY : self.class::STATUS_SECONDARY
     end
 
+    def ene_tool_cycler_icon
+      File.join(PLUGIN_DIR, "images", "#{self.class::METHOD_NAME.to_s}.svg")
+    end
+
     private
 
     def reset
