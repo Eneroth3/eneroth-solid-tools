@@ -14,7 +14,7 @@ module SolidOperations
   # @param container [Sketchup::Group, Sketchup::ComponentInstance]
   #
   # @return [Boolean]
-  def self.is_solid?(container)
+  def self.solid?(container)
     return unless [Sketchup::Group, Sketchup::ComponentInstance].include?(container.class)
     ents = entities(container)
 
@@ -33,8 +33,8 @@ module SolidOperations
   #   be a solid.
   #
   # @return [Boolean]
-  def self.inside_solid?(point, container, on_boundary = true, verify_solid = true)
-    return if verify_solid && !is_solid?(container)
+  def self.within?(point, container, on_boundary = true, verify_solid = true)
+    return if verify_solid && !solid?(container)
 
     # Transform point coordinates into the local coordinate system of the
     # container. The original point should be defined relative to the axes of
@@ -100,7 +100,7 @@ module SolidOperations
   def self.union(target, modifier)
 
     #Check if both groups/components are solid.
-    return if !is_solid?(target) || !is_solid?(modifier)
+    return if !solid?(target) || !solid?(modifier)
 
     # Older SU versions doesn't automatically make Groups unique when they are
     # edited.
@@ -149,7 +149,7 @@ module SolidOperations
 
     weld_hack(primary_ents)
 
-    is_solid?(target)
+    solid?(target)
   end
 
   # Subtract one container from another.
@@ -162,7 +162,7 @@ module SolidOperations
   def self.subtract(target, modifier, keep_modifer = false)
 
     #Check if both groups/components are solid.
-    return if !is_solid?(target) || !is_solid?(modifier)
+    return if !solid?(target) || !solid?(modifier)
 
     # Older SU versions doesn't automatically make Groups unique when they are
     # edited.
@@ -215,7 +215,7 @@ module SolidOperations
 
     weld_hack(primary_ents)
 
-    is_solid?(target)
+    solid?(target)
   end
 
   # Trim one container from another.
@@ -237,7 +237,7 @@ module SolidOperations
   def self.intersect(target, modifier)
 
     #Check if both groups/components are solid.
-    return if !is_solid?(target) || !is_solid?(modifier)
+    return if !solid?(target) || !solid?(modifier)
 
     # Older SU versions doesn't automatically make Groups unique when they are
     # edited.
@@ -286,7 +286,7 @@ module SolidOperations
 
     weld_hack(primary_ents)
 
-    is_solid?(target)
+    solid?(target)
   end
 
   #-----------------------------------------------------------------------------
@@ -384,7 +384,7 @@ module SolidOperations
       point = point_at_face(f)
       next unless point
       point.transform!(scope.transformation)
-      next if interior != inside_solid?(point, reference, interior == on_surface, false)
+      next if interior != within?(point, reference, interior == on_surface, false)
 
       true
     end
@@ -505,7 +505,7 @@ module SolidOperations
   #
   # @return [Void]
   def self.weld_hack(entities)
-    unless is_solid?(entities.parent)
+    unless solid?(entities.parent)
       naked_edges = naked_edges entities
 
       temp_group = entities.add_group

@@ -22,7 +22,7 @@ module Tools
     def self.perform_or_activate
       model = Sketchup.active_model
       selection = model.selection
-      if selection.size > 1 && selection.all? { |e| SolidOperations.is_solid?(e) }
+      if selection.size > 1 && selection.all? { |e| SolidOperations.solid?(e) }
 
         # Sort by bounding box volume since no order is given.
         # To manually define the what solid to modify and what to modify with
@@ -76,7 +76,7 @@ module Tools
       # Get what was clicked, return if not a solid.
       @ph.do_pick(x, y)
       picked = @ph.best_picked
-      return unless SolidOperations.is_solid?(picked)
+      return unless SolidOperations.solid?(picked)
 
       if !@primary
         Sketchup.status_text = self.class::STATUS_SECONDARY
@@ -104,7 +104,7 @@ module Tools
       @ph.do_pick(x, y)
       picked = @ph.best_picked
       return if picked == @primary
-      return unless SolidOperations.is_solid?(picked)
+      return unless SolidOperations.solid?(picked)
       selection.add(picked)
     end
 
