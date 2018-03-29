@@ -1,9 +1,10 @@
 module Eneroth
 module SolidTools
+module Tools
 
   Sketchup.require(File.join(PLUGIN_DIR, "solid_operations"))
 
-  class BaseTool
+  class Base
 
     NOT_SOLID_ERROR = "Something went wrong :/\n\nOutput is not a solid."
 
@@ -123,7 +124,7 @@ module SolidTools
 
   end
 
-  class UnionTool < BaseTool
+  class Union < Base
     CURSOR_FILENAME  = "cursor_union.png"
     STATUS_PRIMARY   = "Click primary solid group/component to add to."
     STATUS_SECONDARY = "Click secondary solid group/component to add with. Esc = Select new primary solid."
@@ -132,7 +133,7 @@ module SolidTools
     METHOD_NAME      = :union
   end
 
-  class SubtractTool < BaseTool
+  class Subtract < Base
     CURSOR_FILENAME  = "cursor_subtract.png"
     STATUS_PRIMARY   = "Click primary solid group/component to subtract from."
     STATUS_SECONDARY = "Click secondary solid group/component to subtract with. Esc = Select new primary solid."
@@ -141,7 +142,7 @@ module SolidTools
     METHOD_NAME      = :subtract
   end
 
-  class TrimTool < BaseTool
+  class Trim < Base
     CURSOR_FILENAME  = "cursor_trim.png"
     STATUS_PRIMARY   = "Click primary solid group/component to trim."
     STATUS_SECONDARY = "Click secondary solid group/component to trim away. Esc = Select new primary solid."
@@ -150,7 +151,7 @@ module SolidTools
     METHOD_NAME      = :trim
   end
 
-  class IntersectTool < BaseTool
+  class Intersect < Base
     CURSOR_FILENAME  = "cursor_intersect.png"
     STATUS_PRIMARY   = "Click original solid group/component to intersect."
     STATUS_SECONDARY = "Click secondary solid group/component intersect with. Esc = Select new primary solid."
@@ -159,5 +160,6 @@ module SolidTools
     METHOD_NAME      = :intersect
   end
 
+end
 end
 end
