@@ -1,6 +1,5 @@
-# Eneroth solid Tools
-
-module EneSolidTools
+module Eneroth
+module SolidTools
 
   # Various solid operations.
   #
@@ -570,4 +569,5 @@ module EneSolidTools
 
   end
 
+end
 end

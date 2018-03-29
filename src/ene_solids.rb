@@ -1,11 +1,25 @@
-# Eneroth Solid Tools
+#-------------------------------------------------------------------------------
+#
+#    Author: Julia Christina Eneroth
+# Copyright: Copyright (c) 2018
+#   License: MIT
+#
+#-------------------------------------------------------------------------------
 
-require "sketchup.rb"
 require "extensions.rb"
 
-module EneSolidTools
+# Eneroth Extensions
+module Eneroth
 
-  PLUGIN_DIR = File.join(File.dirname(__FILE__), File.basename(__FILE__, ".rb"))
+# Solid Tools Extension
+module SolidTools
+
+  path = __FILE__
+  path.force_encoding("UTF-8") if path.respond_to?(:force_encoding)
+
+  PLUGIN_ID = File.basename(path, ".*")
+  PLUGIN_DIR = File.join(File.dirname(path), PLUGIN_ID)
+
   REQUIRED_SU_VERSION = 14
 
   EXTENSION = SketchupExtension.new(
@@ -17,7 +31,8 @@ module EneSolidTools
     "Solid union, subtract and trim tool. Designed to be more consistent to "\
     "other SketchUp tools than SketchUp's native solid tools."
   EXTENSION.version     = "2.0.1"
-  EXTENSION.copyright   = "#{EXTENSION.creator} #{Time.now.year}"
+  EXTENSION.copyright   = "2018, #{EXTENSION.creator}"
   Sketchup.register_extension(EXTENSION, true)
 
+end
 end

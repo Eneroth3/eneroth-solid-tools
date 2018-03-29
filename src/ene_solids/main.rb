@@ -1,6 +1,5 @@
-# Eneroth solid Tools
-
-module EneSolidTools
+module Eneroth
+module SolidTools
 
   if Sketchup.version.to_i < REQUIRED_SU_VERSION
     msg = "#{EXTENSION.name} requires SketchUp 20#{REQUIRED_SU_VERSION} or later to run."
@@ -99,4 +98,5 @@ module EneSolidTools
     end
   end
 
+end
 end

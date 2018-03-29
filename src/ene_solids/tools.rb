@@ -1,6 +1,5 @@
-# Eneroth solid Tools
-
-module EneSolidTools
+module Eneroth
+module SolidTools
 
   class BaseTool
 
@@ -158,4 +157,5 @@ module EneSolidTools
     METHOD_NAME      = :intersect
   end
 
+end
 end
