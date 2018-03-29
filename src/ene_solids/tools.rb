@@ -4,17 +4,21 @@ module Tools
 
   Sketchup.require(File.join(PLUGIN_DIR, "solid_operations"))
 
+  # Common private Superclass for all tools, as they are very similar.
   class Base
 
     NOT_SOLID_ERROR = "Something went wrong :/\n\nOutput is not a solid."
 
-    # Since SketchUp's built checking of tools in menus seems to fail for tools
-    # that are subclasses the active tool's class has to be tracked by the
-    # plugin.
+    # Track which of these tools is active so its menu entry/toolbar icon can be
+    # highlighted.
     @@active_tool_class = nil
 
-    # Perform solid operation on selection if it consists of two or more solids
-    # and nothing else, otherwise activate tool.
+    # Perform operation or activate tool, depending on selection.
+    #
+    # If selection contains two or more solids, the tool is activated. Otherwise
+    # the action is carried out diretcly, without changing active tool.
+    #
+    # @return [Void]
     def self.perform_or_activate
       model = Sketchup.active_model
       selection = model.selection
@@ -43,15 +47,18 @@ module Tools
       else
         Sketchup.active_model.select_tool(new)
       end
+
+      nil
     end
 
-    # Check whether this is the active tool.
+    # Test whether this tool is active.
+    #
+    # @return [Boolean]
     def self.active?
       @@active_tool_class == self
     end
 
-    # SketchUp Tool Interface
-
+    # @see http://ruby.sketchup.com/Sketchup/Tool.html
     def activate
       @ph = Sketchup.active_model.active_view.pick_helper
       @cursor = UI.create_cursor(File.join(PLUGIN_DIR, "images", self.class::CURSOR_FILENAME), 2, 2)
@@ -59,10 +66,12 @@ module Tools
       reset
     end
 
+    # @see http://ruby.sketchup.com/Sketchup/Tool.html
     def deactivate(view)
       @@active_tool_class = nil
     end
 
+    # @see http://ruby.sketchup.com/Sketchup/Tool.html
     def onLButtonDown(flags, x, y, view)
       # Get what was clicked, return if not a solid.
       @ph.do_pick(x, y)
@@ -84,6 +93,7 @@ module Tools
       end
     end
 
+    # @see http://ruby.sketchup.com/Sketchup/Tool.html
     def onMouseMove(flags, x, y, view)
       # Highlight hovered solid by making it the only selected entity.
       # Consistent to rotation, move and scale tool.
@@ -98,24 +108,29 @@ module Tools
       selection.add(picked)
     end
 
+    # @see http://ruby.sketchup.com/Sketchup/Tool.html
     def onCancel(reason, view)
       reset
     end
 
+    # @see http://ruby.sketchup.com/Sketchup/Tool.html
     def onSetCursor
       UI.set_cursor(@cursor)
     end
 
+    # @see http://ruby.sketchup.com/Sketchup/Tool.html
     def resume(view)
       Sketchup.status_text = !@primary ? self.class::STATUS_PRIMARY : self.class::STATUS_SECONDARY
     end
 
+    # @see https://extensions.sketchup.com/pl/content/eneroth-tool-memory
     def ene_tool_cycler_icon
       File.join(PLUGIN_DIR, "images", "#{self.class::METHOD_NAME.to_s}.svg")
     end
 
     private
 
+    # Reset tool to its original state.
     def reset
       Sketchup.active_model.selection.clear
       Sketchup.status_text = self.class::STATUS_PRIMARY
@@ -123,7 +138,9 @@ module Tools
     end
 
   end
+  private_constant :Base
 
+  # Union Tool.
   class Union < Base
     CURSOR_FILENAME  = "cursor_union.png"
     STATUS_PRIMARY   = "Click primary solid group/component to add to."
@@ -133,6 +150,7 @@ module Tools
     METHOD_NAME      = :union
   end
 
+  # Subtract Tool.
   class Subtract < Base
     CURSOR_FILENAME  = "cursor_subtract.png"
     STATUS_PRIMARY   = "Click primary solid group/component to subtract from."
@@ -142,6 +160,7 @@ module Tools
     METHOD_NAME      = :subtract
   end
 
+  # Trim Tool.
   class Trim < Base
     CURSOR_FILENAME  = "cursor_trim.png"
     STATUS_PRIMARY   = "Click primary solid group/component to trim."
@@ -151,6 +170,7 @@ module Tools
     METHOD_NAME      = :trim
   end
 
+  # Intersect Tool.
   class Intersect < Base
     CURSOR_FILENAME  = "cursor_intersect.png"
     STATUS_PRIMARY   = "Click original solid group/component to intersect."

@@ -6,13 +6,14 @@ module SolidTools
 # For differences to native Solid Operations, see README.
 module SolidOperations
 
-  # Check if a Group or ComponentInstance is solid. If every edge binds an
-  # even faces it is considered a solid. Nested groups and components are
-  # ignored.
+  # Test if Group or Component is solid.
   #
-  # container - The Group or ComponentInstance to test.
+  # If every edge in container binds an even number of faces the container is
+  # considered solid. Nested containers are ignored.
   #
-  # Returns Boolean.
+  # @param container [Sketchup::Group, Sketchup::ComponentInstance]
+  #
+  # @return [Boolean]
   def self.is_solid?(container)
     return unless [Sketchup::Group, Sketchup::ComponentInstance].include?(container.class)
     ents = entities(container)
@@ -20,20 +21,19 @@ module SolidOperations
     !ents.any? { |e| e.is_a?(Sketchup::Edge) && e.faces.size.odd? }
   end
 
-  # Check whether Point3d is inside, outside or the surface of solid.
+  # Test if point is inside of container.
   #
-  # point                - Point3d to test (in the coordinate system the
-  #                        container lies in, not internal coordinates).
-  # container            - Group or component to test point to.
-  # on_face_return_value - What to return when point is on face of solid.
-  #                        (default: true)
-  # verify_solid         - First verify that container actually is
-  #                        a solid. (default true)
+  # @param point [Geom::Point3d] Point in the same coordinate system as the
+  #   container, not its internal coordinate system.
+  # @param container [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param on_boundary [Boolean] Value to return if point is on the boundary
+  #   (surface) itself.
+  # @param verify_solid [Boolean] Test whether container is a solid, and return
+  #   false if it isn't. This test can be omitted if the container is known to
+  #   be a solid.
   #
-  # Returns true if point is inside container and false if outside. Returns
-  # on_face_return_value when point is on surface itself.
-  # Returns nil if container isn't a solid and verify_solid is true.
-  def self.inside_solid?(point, container, on_face_return_value = true, verify_solid = true)
+  # @return [Boolean]
+  def self.inside_solid?(point, container, on_boundary = true, verify_solid = true)
     return if verify_solid && !is_solid?(container)
 
     # Transform point coordinates into the local coordinate system of the
@@ -62,7 +62,7 @@ module SolidOperations
 
       # If point is on face of solid, return value specified for that case.
       clasify_point = face.classify_point(point)
-      return on_face_return_value if [Sketchup::Face::PointInside, Sketchup::Face::PointOnEdge, Sketchup::Face::PointOnVertex].include?(clasify_point)
+      return on_boundary if [Sketchup::Face::PointInside, Sketchup::Face::PointOnEdge, Sketchup::Face::PointOnVertex].include?(clasify_point)
 
       intersection = Geom.intersect_line_plane(ray, face.plane)
       next unless intersection
@@ -93,61 +93,53 @@ module SolidOperations
 
   # Unite one container with another.
   #
-  # The primary Group/ComponentInstance keeps its material, layer, attributes
-  # and other properties. Primitives inside both containers also keep their
-  # materials, layers, attributes and other properties.
+  # @param target [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param modifier [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param wrap_in_operator [Boolean]
   #
-  # primary          - The primary Group/ComponentInstance the secondary one
-  #                    should be added to.
-  # secondary        - The secondary Group/ComponentInstance to add to the
-  #                    primary one.
-  # wrap_in_operator - True to add an operation so all changes can be undone
-  #                    in one step. Set to false when called from custom
-  #                    script that already uses an operator. (default: true)
-  #
-  # Returns true if result is a solid, false if something went wrong.
-  def self.union(primary, secondary, wrap_in_operator = true)
+  # @return [Boolean] false denotes failure in algorithm.
+  def self.union(target, modifier, wrap_in_operator = true)
 
     #Check if both groups/components are solid.
-    return if !is_solid?(primary) || !is_solid?(secondary)
+    return if !is_solid?(target) || !is_solid?(modifier)
 
-    primary.model.start_operation("Union", true) if wrap_in_operator
+    target.model.start_operation("Union", true) if wrap_in_operator
 
     # Older SU versions doesn't automatically make Groups unique when they are
     # edited.
     # Components on the other hand should off course not be made unique here.
     # That is up to the user to do manually if they want to.
-    primary.make_unique if primary.is_a?(Sketchup::Group)
+    target.make_unique if target.is_a?(Sketchup::Group)
 
-    # Copy the content of secondary into a temporary group where it can safely
+    # Copy the content of modifier into a temporary group where it can safely
     # modified without altering any other instances.
     # make_unique is not used since this would create a component visible in
-    # the component browser if secondary is a component.
-    temp_group = primary.parent.entities.add_group
-    move_into(temp_group, secondary)
-    secondary = temp_group
+    # the component browser if modifier is a component.
+    temp_group = target.parent.entities.add_group
+    move_into(temp_group, modifier)
+    modifier = temp_group
 
-    primary_ents = entities(primary)
-    secondary_ents = entities(secondary)
+    primary_ents = entities(target)
+    secondary_ents = entities(modifier)
 
     # Remember co-planar edges for later.
-    # FIXME: References in secondary are lost in SU2017.
+    # FIXME: References in modifier are lost in SU2017.
     old_coplanar = find_coplanar_edges(primary_ents)
     old_coplanar += find_coplanar_edges(secondary_ents)
 
     # Double intersect so intersection edges appear in both contexts.
-    intersect_wrapper(primary, secondary)
+    add_intersection_edges(target, modifier)
 
     # Remove faces in both containers that are inside the other one's solid.
     # Remove faces that exists in both groups and have opposite orientation.
-    to_remove = find_faces(primary, secondary, true, false)
-    to_remove1 = find_faces(secondary, primary, true, false)
-    corresponding = find_corresponding_faces(primary, secondary, false)
+    to_remove = find_faces(target, modifier, true, false)
+    to_remove1 = find_faces(modifier, target, true, false)
+    corresponding = find_corresponding_faces(target, modifier, false)
     corresponding.each_with_index { |v, i| i.even? ? to_remove << v : to_remove1 << v }
     primary_ents.erase_entities(to_remove)
     secondary_ents.erase_entities(to_remove1)
 
-    move_into(primary, secondary)
+    move_into(target, modifier)
 
     # Purge edges no longer not binding 2 edges.
     purge_edges(primary_ents)
@@ -160,76 +152,66 @@ module SolidOperations
 
     weld_hack(primary_ents)
 
-    primary.model.commit_operation if wrap_in_operator
+    target.model.commit_operation if wrap_in_operator
 
-    is_solid?(primary)
+    is_solid?(target)
   end
 
   # Subtract one container from another.
   #
-  # The primary Group/ComponentInstance keeps its material, layer, attributes
-  # and other properties. Primitives inside both containers also keep their
-  # materials, layers, attributes and other properties.
+  # @param target [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param modifier [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param wrap_in_operator [Boolean]
+  # @param keep_modifer [Boolean] Keeping modifier makes this a trim operation.
   #
-  # primary          - The primary Group/ComponentInstance the secondary one
-  #                    should be subtracted from.
-  # secondary        - The secondary Group/ComponentInstance to subtract from
-  #                    the primary one.
-  # wrap_in_operator - True to add an operation so all changes can be undone
-  #                    in one step. Set to false when called from custom
-  #                    script that already uses an operator. (default: true)
-  # keep_secondary   - Whether secondary should be left untouched. The same as
-  #                    whether operation should be trim instead subtract.
-  #                    (default: false)
-  #
-  # Returns true if result is a solid, false if something went wrong.
-  def self.subtract(primary, secondary, wrap_in_operator = true, keep_secondary = false)
+  # @return [Boolean] false denotes failure in algorithm.
+  def self.subtract(target, modifier, wrap_in_operator = true, keep_modifer = false)
 
     #Check if both groups/components are solid.
-    return if !is_solid?(primary) || !is_solid?(secondary)
+    return if !is_solid?(target) || !is_solid?(modifier)
 
-    op_name = keep_secondary ? "Trim" : "Subtract"
-    primary.model.start_operation(op_name, true) if wrap_in_operator
+    op_name = keep_modifer ? "Trim" : "Subtract"
+    target.model.start_operation(op_name, true) if wrap_in_operator
 
     # Older SU versions doesn't automatically make Groups unique when they are
     # edited.
     # Components on the other hand should off course not be made unique here.
     # That is up to the user to do manually if they want to.
-    primary.make_unique if primary.is_a?(Sketchup::Group)
+    target.make_unique if target.is_a?(Sketchup::Group)
 
-    # Copy the content of secondary into a temporary group where it can safely
+    # Copy the content of modifier into a temporary group where it can safely
     # modified without altering any other instances.
     # make_unique is not used since this would create a component visible in
-    # the component browser if secondary is a component.
-    temp_group = primary.parent.entities.add_group
-    move_into(temp_group, secondary, keep_secondary)
-    secondary = temp_group
+    # the component browser if modifier is a component.
+    temp_group = target.parent.entities.add_group
+    move_into(temp_group, modifier, keep_modifer)
+    modifier = temp_group
 
-    primary_ents = entities(primary)
-    secondary_ents = entities(secondary)
+    primary_ents = entities(target)
+    secondary_ents = entities(modifier)
 
     # Remember co-planar edges for later.
-    # FIXME: References in secondary are lost in SU2017.
+    # FIXME: References in modifier are lost in SU2017.
     old_coplanar = find_coplanar_edges(primary_ents)
     old_coplanar += find_coplanar_edges(secondary_ents)
 
     # Double intersect so intersection edges appear in both contexts.
-    intersect_wrapper(primary, secondary)
+    add_intersection_edges(target, modifier)
 
-    # Remove faces in primary that are inside the secondary and faces in
-    # secondary that are outside primary.
+    # Remove faces in target that are inside the modifier and faces in
+    # modifier that are outside target.
     # Remove faces that exists in both groups and have opposite orientation.
-    to_remove = find_faces(primary, secondary, true, false)
-    to_remove1 = find_faces(secondary, primary, false, false)
-    corresponding = find_corresponding_faces(primary, secondary, true)
+    to_remove = find_faces(target, modifier, true, false)
+    to_remove1 = find_faces(modifier, target, false, false)
+    corresponding = find_corresponding_faces(target, modifier, true)
     corresponding.each_with_index { |v, i| i.even? ? to_remove << v : to_remove1 << v }
     primary_ents.erase_entities(to_remove)
     secondary_ents.erase_entities(to_remove1)
 
-    # Reverse all faces in secondary
+    # Reverse all faces in modifier
     secondary_ents.each { |f| f.reverse! if f.is_a? Sketchup::Face }
 
-    move_into(primary, secondary)
+    move_into(target, modifier)
 
     # Purge edges no longer not binding 2 edges.
     purge_edges(primary_ents)
@@ -242,86 +224,71 @@ module SolidOperations
 
     weld_hack(primary_ents)
 
-    primary.model.commit_operation if wrap_in_operator
+    target.model.commit_operation if wrap_in_operator
 
-    is_solid?(primary)
+    is_solid?(target)
   end
 
-  # Trim one container using another.
+  # Trim one container from another.
   #
-  # The primary Group/ComponentInstance keeps its material, layer, attributes
-  # and other properties. Primitives inside both containers also keep their
-  # materials, layers, attributes and other properties.
+  # @param target [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param modifier [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param wrap_in_operator [Boolean]
   #
-  # primary          - The primary Group/ComponentInstance to trim using the
-  #                    secondary one.
-  # secondary        - The secondary Group/ComponentInstance to trim the
-  #                    primary one with.
-  # wrap_in_operator - True to add an operation so all changes can be undone
-  #                    in one step. Set to false when called from custom
-  #                    script that already uses an operator. (default: true)
-  #
-  # Returns true if result is a solid, false if something went wrong.
-  def self.trim(primary, secondary, wrap_in_operator = true)
-    subtract(primary, secondary, wrap_in_operator, true)
+  # @return [Boolean] false denotes failure in algorithm.
+  def self.trim(target, modifier, wrap_in_operator = true)
+    subtract(target, modifier, wrap_in_operator, true)
   end
 
-  # Intersect containers.
+  # Intersect one container with another.
   #
-  # The primary Group/ComponentInstance keeps its material, layer, attributes
-  # and other properties. Primitives inside both containers also keep their
-  # materials, layers, attributes and other properties.
+  # @param target [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param modifier [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param wrap_in_operator [Boolean]
   #
-  # primary          - The primary Group/ComponentInstance the intersect
-  #                    intersect result will be put in.
-  # secondary        - The secondary Group/ComponentInstance.
-  # wrap_in_operator - True to add an operation so all changes can be undone
-  #                    in one step. Set to false when called from custom
-  #                    script that already uses an operator. (default: true)
-  #
-  # Returns true if result is a solid, false if something went wrong.
-  def self.intersect(primary, secondary, wrap_in_operator = true)
+  # @return [Boolean] false denotes failure in algorithm.
+  def self.intersect(target, modifier, wrap_in_operator = true)
 
     #Check if both groups/components are solid.
-    return if !is_solid?(primary) || !is_solid?(secondary)
+    return if !is_solid?(target) || !is_solid?(modifier)
 
-    primary.model.start_operation("Intersect", true)if wrap_in_operator
+    target.model.start_operation("Intersect", true)if wrap_in_operator
 
     # Older SU versions doesn't automatically make Groups unique when they are
     # edited.
     # Components on the other hand should off course not be made unique here.
     # That is up to the user to do manually if they want to.
-    primary.make_unique if primary.is_a?(Sketchup::Group)
+    target.make_unique if target.is_a?(Sketchup::Group)
 
-    # Copy the content of secondary into a temporary group where it can safely
+    # Copy the content of modifier into a temporary group where it can safely
     # modified without altering any other instances.
     # make_unique is not used since this would create a component visible in
-    # the component browser if secondary is a component.
-    temp_group = primary.parent.entities.add_group
-    move_into(temp_group, secondary)
-    secondary = temp_group
+    # the component browser if modifier is a component.
+    temp_group = target.parent.entities.add_group
+    move_into(temp_group, modifier)
+    modifier = temp_group
 
-    primary_ents = entities(primary)
-    secondary_ents = entities(secondary)
+    primary_ents = entities(target)
+    secondary_ents = entities(modifier)
 
     # Remember co-planar edges for later.
-    # FIXME: References in secondary are lost in SU2017.
+    # FIXME: References in modifier are lost in SU2017.
     old_coplanar = find_coplanar_edges(primary_ents)
     old_coplanar += find_coplanar_edges(secondary_ents)
 
     # Double intersect so intersection edges appear in both contexts.
-    intersect_wrapper(primary, secondary)
+    add_intersection_edges(target, modifier)
 
     # Remove faces in both containers that are outside the other one's solid.
     # Remove faces that exists in both groups and have opposite orientation.
-    to_remove = find_faces(primary, secondary, false, false)
-    to_remove1 = find_faces(secondary, primary, false, false)
-    corresponding = find_corresponding_faces(primary, secondary, false)
+    to_remove = find_faces(target, modifier, false, false)
+    to_remove1 = find_faces(modifier, target, false, false)
+    corresponding = find_corresponding_faces(target, modifier, false)
     corresponding.each_with_index { |v, i| i.even? ? to_remove << v : to_remove1 << v }
     primary_ents.erase_entities(to_remove)
     secondary_ents.erase_entities(to_remove1)
 
-    move_into(primary, secondary)
+    move_into(target, modifier)
 
     # Purge edges no longer not binding 2 edges.
     purge_edges(primary_ents)
@@ -334,60 +301,63 @@ module SolidOperations
 
     weld_hack(primary_ents)
 
-    primary.model.commit_operation if wrap_in_operator
+    target.model.commit_operation if wrap_in_operator
 
-    is_solid?(primary)
+    is_solid?(target)
   end
 
   #-----------------------------------------------------------------------------
 
-  # Internal: Get the Entities object for either a Group or CompnentInstance.
-  # SU 2014 and lower doesn't support Group#definition.
+  # Get the Entities object for group or component.
   #
-  # group_or_component - The group or ComponentInstance object.
+  # Prior to SU 2015 there is no native Group#definition method.
   #
-  # Returns an Entities object.
-  def self.entities(group_or_component)
-    if group_or_component.is_a?(Sketchup::Group)
-      group_or_component.entities
+  # @param container [Sketchup::Group, Sketchup::ComponentInstance]
+  #
+  # @return [Entities]
+  def self.entities(container)
+    if container.is_a?(Sketchup::Group)
+      container.entities
     else
-      group_or_component.definition.entities
+      container.definition.entities
     end
   end
+  private_class_method :entities
 
-  # Internal: Intersect solids and get intersection edges in both solids.
+  # Intersect containers and place intersection edges in both containers.
   #
-  # ent0 - One of the groups or components to intersect.
-  # ent1 - The other groups or components to intersect.
+  # @param container1 [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param container2 [Sketchup::Group, Sketchup::ComponentInstance]
   #
-  #Returns nothing.
-  def self.intersect_wrapper(ent0, ent1)
+  # @return [Void]
+  def self.add_intersection_edges(container1, container2)
 
-    ents0 = entities(ent0)
-    ents1 = entities(ent1)
+    ents0 = entities(container1)
+    ents1 = entities(container2)
 
     #Intersect twice to get coplanar faces.
     #Copy the intersection geometry to both solids.
     #Both solids must be in the same drawing context which they are moved to
     #in union and subtract method.
-    temp_group = ent0.parent.entities.add_group
+    temp_group = container1.parent.entities.add_group
 
     #Only intersect raw geometry, save time and avoid unwanted edges.
-    ents0.intersect_with(false, ent0.transformation, temp_group.entities, IDENTITY, true, ents1.to_a.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) })
-    ents1.intersect_with(false, ent0.transformation.inverse, temp_group.entities, ent0.transformation.inverse, true, ents0.to_a.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) })
+    ents0.intersect_with(false, container1.transformation, temp_group.entities, IDENTITY, true, ents1.to_a.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) })
+    ents1.intersect_with(false, container1.transformation.inverse, temp_group.entities, container1.transformation.inverse, true, ents0.to_a.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) })
 
-    move_into(ent0, temp_group, true)
-    move_into(ent1, temp_group)
+    move_into(container1, temp_group, true)
+    move_into(container2, temp_group)
 
     nil
   end
+  private_class_method :add_intersection_edges
 
-  # Internal: Find arbitrary point inside face, not on its edge or corner.
+  # Find an arbitrary point at a face.
   #
-  # face - The face to find a point in.
+  # @param face [Sketchup::Face]
   #
-  # Returns a Point3d object.
-  def self.point_in_face(face)
+  # @return [Geom::Point3d]
+  def self.point_at_face(face)
 
     # Sometimes invalid faces gets created when intersecting.
     # These are removed when validity check run.
@@ -413,43 +383,57 @@ module SolidOperations
 
     nil
   end
+  private_class_method :point_at_face
 
-  # Internal: Find faces to remove based on their position relative to the
-  # other solid.
-  def self.find_faces(source, reference, inside, on_surface)
-    entities(source).select do |f|
+  # Find faces based on them being interior or exterior to reference container.
+  #
+  # @param scope [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param reference [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param interior [Boolean] Whether faces interior to reference or faces exterior
+  #   to reference should be selected.
+  # @param on_surface [Boolean] I can't remember what this does, besides giving
+  #   me a headache.
+  #
+  # @return [Array<Sketchup::Face>]
+  def self.find_faces(scope, reference, interior, on_surface)
+    entities(scope).select do |f|
       next unless f.is_a?(Sketchup::Face)
-      point = point_in_face(f)
+      point = point_at_face(f)
       next unless point
-      point.transform!(source.transformation)
-      next if inside != inside_solid?(point, reference, inside == on_surface, false)
+      point.transform!(scope.transformation)
+      next if interior != inside_solid?(point, reference, interior == on_surface, false)
+
       true
     end
   end
+  private_class_method :find_faces
 
-  # Internal: Find faces that exists with same location in both contexts.
+  # Find pairs of faces duplicated between containers.
   #
-  # same_orientation - true to only return those oriented the same direction,
-  #                    false to only return those oriented the opposite
-  #                    direction and nil to skip direction check.
+  # @param container1 [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param container2 [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param orientation [Boolean, nil] True only returns faces with same
+  #   orientation, false only returns faces with opposite orientation and nil
+  #   skips orientation check.
   #
-  # Returns an array of faces, every second being in each drawing context.
-  def self.find_corresponding_faces(ent0, ent1, same_orientation)
+  # @return [Array<Sketchup::Face>] Odd faces are from container1 and even from
+  #   container2.
+  def self.find_corresponding_faces(container1, container2, orientation)
 
     faces = []
 
-    entities(ent0).each do |f0|
+    entities(container1).each do |f0|
       next unless f0.is_a?(Sketchup::Face)
-      normal0 = f0.normal.transform(ent0.transformation)
-      points0 = f0.vertices.map { |v| v.position.transform(ent0.transformation) }
-      entities(ent1).each do |f1|
+      normal0 = f0.normal.transform(container1.transformation)
+      points0 = f0.vertices.map { |v| v.position.transform(container1.transformation) }
+      entities(container2).each do |f1|
         next unless f1.is_a?(Sketchup::Face)
-        normal1 = f1.normal.transform(ent1.transformation)
+        normal1 = f1.normal.transform(container2.transformation)
         next unless normal0.parallel?(normal1)
-        points1 = f1.vertices.map { |v| v.position.transform(ent1.transformation) }
+        points1 = f1.vertices.map { |v| v.position.transform(container2.transformation) }
         next unless points0.all? { |v| points1.include?(v) }
-        unless same_orientation.nil?
-          next if normal0.samedirection?(normal1) != same_orientation
+        unless orientation.nil?
+          next if normal0.samedirection?(normal1) != orientation
         end
         faces << f0
         faces << f1
@@ -458,19 +442,34 @@ module SolidOperations
 
     faces
   end
+  private_class_method :find_corresponding_faces
 
-  # Internal: Remove all edges binding less than 2 edges.
-  def self.purge_edges(ents)
-    ents.erase_entities(ents.select { |e|
+  # Remove all edges binding less than 2 edges.
+  #
+  # @param entities [Sketchup::Entities]
+  #
+  # @return [Void]
+  def self.purge_edges(entities)
+    entities.erase_entities(entities.select { |e|
       next unless e.is_a?(Sketchup::Edge)
       next unless e.faces.size < 2
       true
     })
-  end
 
-  # Internal: Merges groups/components.
-  # Requires both groups/components to be in the same drawing context.
-  def self.move_into(destination, to_move, keep = false)
+    nil
+  end
+  private_class_method :purge_edges
+
+  # Move content of one container into another.
+  #
+  # Requires containers to be in the same drawing context.
+  #
+  # @param destination [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param to_move [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param keep_original [Boolean]
+  #
+  # @return [Void]
+  def self.move_into(destination, to_move, keep_original = false)
 
     #Create a new instance of the group/component.
     #Properties like material and attributes will be lost but should not be used
@@ -489,16 +488,21 @@ module SolidOperations
     trans = trans_target.inverse*trans*trans_target
 
     temp = destination_ents.add_instance(to_move_def, trans)
-    to_move.erase! unless keep
+    to_move.erase! unless keep_original
     temp.explode
 
+    nil
   end
+  private_class_method :move_into
 
-  # Internal: Find all co-planar edges in entities with both faces having same
-  # material and layer.
-  def self.find_coplanar_edges(ents)
+  # Find coplanar edges with same material and layers on both sides.
+  #
+  # @param entities [Sketchup::Entities]
+  #
+  # @return [Array<Sketchup::Edge>]
+  def self.find_coplanar_edges(entities)
 
-    ents.select do |e|
+    entities.select do |e|
       next unless e.is_a?(Sketchup::Edge)
       next unless e.faces.size == 2
 
@@ -508,13 +512,15 @@ module SolidOperations
     end
 
   end
+  private_class_method :find_coplanar_edges
 
-  # Internal: Sometimes naked overlapping un-welded edges are formed in SU.
-  # This method tried to weld them.
+  # Weld overlapping edges.
   #
-  # entities - The entities object to weld in.
+  # Sometimes SketchUp fails to weld these.
   #
-  # returns nothing
+  # @param entities [Sketchup::Entities]
+  #
+  # @return [Void]
   def self.weld_hack(entities)
     unless is_solid?(entities.parent)
       naked_edges = naked_edges entities
@@ -528,17 +534,19 @@ module SolidOperations
 
     nil
   end
+  private_class_method :weld_hack
 
-  # Internal: Find edges that's only binding one face.
+  # Find edges only binding one face.
   #
-  # entities - An Entities object or an Array of Entity objects.
+  # @param entities [Sketchup::Entities]
   #
-  # Returns an Array of Edges.
+  # @return [Array<Sketchup::Edge>]
   def self.naked_edges(entities)
     entities = entities.to_a
 
     entities.select { |e| e.is_a?(Sketchup::Edge) && e.faces.size == 1 }
   end
+  private_class_method :naked_edges
 
 end
 end
