@@ -1,37 +1,10 @@
 module Eneroth
 module SolidTools
 
-  # Various solid operations.
+  # Solid Operations.
   #
-  # To use these operators in your own project, copy the whole class into it
-  # and into your own namespace (module).
-  #
-  # Face orientation is used on touching solids to determine whether faces
-  # should be removed or not. Make sure faces are correctly oriented before
-  # using.
-  #
-  # Differences from native solid tools:
-  #  * Preserves original Group/ComponentInstance object with its own material,
-  #    layer, attributes and other properties instead of creating a new one.
-  #  * Preserves primitives inside groups/components with their own layers,
-  #    attributes and other properties instead of creating new ones.
-  #  * Ignores nested geometry, a house is for instance still a solid you can
-  #    cut away a part of even if there's a cut-opening window component in the
-  #    wall.
-  #  * Operations on components alters all instances as expected instead of
-  #    creating a new unique Group (that's what context menu > Make Unique is
-  #    for).
-  #  * Doesn't break material inheritance. If a Group/ComponentInstance itself
-  #    is painted and child faces are not this will stay the same.
-  #
-  # I, Eneroth3, is much more of a UX person than an algorithm person. Someone
-  # who is more of the latter might be able to optimize these operations and
-  # make them more stable.
-  #
-  # If you contribute to the project, please don't mess up these differences
-  # from the native solid tools. They are very much intended, and even the
-  # reason why this project was started in the first place.
-  module Solids
+  # For differences to native Solid Operations, see README.
+  module SolidOperations
 
     # Check if a Group or ComponentInstance is solid. If every edge binds an
     # even faces it is considered a solid. Nested groups and components are

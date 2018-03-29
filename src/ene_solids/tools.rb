@@ -1,6 +1,8 @@
 module Eneroth
 module SolidTools
 
+  Sketchup.require(File.join(PLUGIN_DIR, "operations"))
+
   class BaseTool
 
     NOT_SOLID_ERROR = "Something went wrong :/\n\nOutput is not a solid."
@@ -15,7 +17,7 @@ module SolidTools
     def self.perform_or_activate
       model = Sketchup.active_model
       selection = model.selection
-      if selection.size > 1 && selection.all? { |e| Solids.is_solid?(e) }
+      if selection.size > 1 && selection.all? { |e| SolidOperations.is_solid?(e) }
 
         # Sort by bounding box volume since no order is given.
         # To manually define the what solid to modify and what to modify with
@@ -25,7 +27,7 @@ module SolidTools
         model.start_operation(self::OPERATOR_NAME, true)
         primary = solids.shift
         until solids.empty?
-          if !Solids.send(self::METHOD_NAME, primary, solids.shift, false)
+          if !SolidOperations.send(self::METHOD_NAME, primary, solids.shift, false)
             model.commit_operation
             UI.messagebox(NOT_SOLID_ERROR)
             return
@@ -64,7 +66,7 @@ module SolidTools
       # Get what was clicked, return if not a solid.
       @ph.do_pick(x, y)
       picked = @ph.best_picked
-      return unless Solids.is_solid?(picked)
+      return unless SolidOperations.is_solid?(picked)
 
       if !@primary
         Sketchup.status_text = self.class::STATUS_SECONDARY
@@ -73,7 +75,7 @@ module SolidTools
         return if picked == @primary
         secondary = picked
         view.model.start_operation(self.class::OPERATOR_NAME, true)
-        if !Solids.send(self.class::METHOD_NAME, @primary, secondary, false)
+        if !SolidOperations.send(self.class::METHOD_NAME, @primary, secondary, false)
           UI.messagebox(NOT_SOLID_ERROR)
           reset
         end
@@ -91,7 +93,7 @@ module SolidTools
       @ph.do_pick(x, y)
       picked = @ph.best_picked
       return if picked == @primary
-      return unless Solids.is_solid?(picked)
+      return unless SolidOperations.is_solid?(picked)
       selection.add(picked)
     end
 
