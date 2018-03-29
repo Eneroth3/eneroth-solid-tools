@@ -32,7 +32,7 @@ module Tools
         model.start_operation(self::OPERATOR_NAME, true)
         primary = solids.shift
         until solids.empty?
-          if !SolidOperations.send(self::METHOD_NAME, primary, solids.shift, false)
+          if !SolidOperations.send(self::METHOD_NAME, primary, solids.shift)
             model.commit_operation
             UI.messagebox(NOT_SOLID_ERROR)
             return
@@ -85,7 +85,7 @@ module Tools
         return if picked == @primary
         secondary = picked
         view.model.start_operation(self.class::OPERATOR_NAME, true)
-        if !SolidOperations.send(self.class::METHOD_NAME, @primary, secondary, false)
+        if !SolidOperations.send(self.class::METHOD_NAME, @primary, secondary)
           UI.messagebox(NOT_SOLID_ERROR)
           reset
         end

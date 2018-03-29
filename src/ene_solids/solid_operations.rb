@@ -95,15 +95,12 @@ module SolidOperations
   #
   # @param target [Sketchup::Group, Sketchup::ComponentInstance]
   # @param modifier [Sketchup::Group, Sketchup::ComponentInstance]
-  # @param wrap_in_operator [Boolean]
   #
   # @return [Boolean] false denotes failure in algorithm.
-  def self.union(target, modifier, wrap_in_operator = true)
+  def self.union(target, modifier)
 
     #Check if both groups/components are solid.
     return if !is_solid?(target) || !is_solid?(modifier)
-
-    target.model.start_operation("Union", true) if wrap_in_operator
 
     # Older SU versions doesn't automatically make Groups unique when they are
     # edited.
@@ -152,8 +149,6 @@ module SolidOperations
 
     weld_hack(primary_ents)
 
-    target.model.commit_operation if wrap_in_operator
-
     is_solid?(target)
   end
 
@@ -161,17 +156,13 @@ module SolidOperations
   #
   # @param target [Sketchup::Group, Sketchup::ComponentInstance]
   # @param modifier [Sketchup::Group, Sketchup::ComponentInstance]
-  # @param wrap_in_operator [Boolean]
   # @param keep_modifer [Boolean] Keeping modifier makes this a trim operation.
   #
   # @return [Boolean] false denotes failure in algorithm.
-  def self.subtract(target, modifier, wrap_in_operator = true, keep_modifer = false)
+  def self.subtract(target, modifier, keep_modifer = false)
 
     #Check if both groups/components are solid.
     return if !is_solid?(target) || !is_solid?(modifier)
-
-    op_name = keep_modifer ? "Trim" : "Subtract"
-    target.model.start_operation(op_name, true) if wrap_in_operator
 
     # Older SU versions doesn't automatically make Groups unique when they are
     # edited.
@@ -224,8 +215,6 @@ module SolidOperations
 
     weld_hack(primary_ents)
 
-    target.model.commit_operation if wrap_in_operator
-
     is_solid?(target)
   end
 
@@ -233,26 +222,22 @@ module SolidOperations
   #
   # @param target [Sketchup::Group, Sketchup::ComponentInstance]
   # @param modifier [Sketchup::Group, Sketchup::ComponentInstance]
-  # @param wrap_in_operator [Boolean]
   #
   # @return [Boolean] false denotes failure in algorithm.
-  def self.trim(target, modifier, wrap_in_operator = true)
-    subtract(target, modifier, wrap_in_operator, true)
+  def self.trim(target, modifier)
+    subtract(target, modifier, true)
   end
 
   # Intersect one container with another.
   #
   # @param target [Sketchup::Group, Sketchup::ComponentInstance]
   # @param modifier [Sketchup::Group, Sketchup::ComponentInstance]
-  # @param wrap_in_operator [Boolean]
   #
   # @return [Boolean] false denotes failure in algorithm.
-  def self.intersect(target, modifier, wrap_in_operator = true)
+  def self.intersect(target, modifier)
 
     #Check if both groups/components are solid.
     return if !is_solid?(target) || !is_solid?(modifier)
-
-    target.model.start_operation("Intersect", true)if wrap_in_operator
 
     # Older SU versions doesn't automatically make Groups unique when they are
     # edited.
@@ -300,8 +285,6 @@ module SolidOperations
     primary_ents.erase_entities(new_coplanar)
 
     weld_hack(primary_ents)
-
-    target.model.commit_operation if wrap_in_operator
 
     is_solid?(target)
   end
