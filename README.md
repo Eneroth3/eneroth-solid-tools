@@ -38,8 +38,8 @@ the modifications.
 These operations were originally created for use in other extensions (Eneroth
 Townhouse System to be precise) and not be a standalone extension. In time the
 solid operations should be split off into its own library (see #2). For now
-the solids.rb file have to be ripped out of this extension if it is to be used
-elsewhere.
+the solid_operations.rb file have to be ripped out of this extension if it is to
+be used elsewhere.
 
 ## Project history #
 
