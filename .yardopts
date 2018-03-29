@@ -1,8 +1,0 @@
---title "Eneroth Solid Tools"
---no-private
---plugin tomdoc
---markup tomdoc
---markup-provider yard-tomdoc
-src/**/*.rb
-
-LICENSE.md

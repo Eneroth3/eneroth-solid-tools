@@ -1,55 +1,51 @@
-# General Plugin Info #
+# Eneroth Solid Tools
 
-Menu: *Tools > Eneroth Solid Tools*.
+Eneroth Solid tools are designed to be easy to use solid operations that better
+fit into SketchUp than SketchUp's native solid tools.
 
-*Union*: Add one solid group or component to another.
+## Differences from native Solid Tools
 
-*Subtract*: Subtract one solid group or component from another.
+The key difference is that these operations modify existing group/components
+(from now on called containers) in place, rather than outputting the result to a
+brand new group. Retaining the original object allows for BIM attributes, axes
+placement, material inheritance, layer, references in other extensions and other
+properties/aspects to be retained.
 
-*Trim*: Trim away one solid group or component from another.
+This also mean all other instances of the same component are modified as once.
+If the user wants to modify only one instance, it is up to the user to
+explicitly make that instance unique first. It is not up to the operations to
+implicitly make definitions unique without the users knowledge or consent.
 
-If the tools are activated with two or more solids selected, the plugin guesses the biggest one is the primary (the one to keep but modify) and the smaller are the secondary ones, deciding how the primary one is modified.
+These operations also make the material inheritance model remain intact. If the
+user has made the decision to keep the default (aka nil) material on all faces
+in a container and instead have painted the container as a whole from the
+outside, this choice is respected (this is by the way the preferred way to apply
+materials in SketchUp as it allows for fast repainting of the object).
 
-If tool is activated with no selection you'll be asked to click each solid, first the primary one and then any number of secondary ones used to alter it.
+Lastly these operators ignore nested containers, whereas the native operators
+refuse to regard any container with nested containers as a solid.
 
-The primary solid will keep its layer, material, attributes and even ruby variables pointing at it unlike how native solid tools work. Layers and attributes of entities inside both of the solids will also be kept.
+## Implementation stuff
 
-If the primary solid is a component it will unlike the native solid tools keep being a component and all instances of it will be altered at once, just as components are supposed to behave. If you want to alter only this one instance, first right click it and make it unique as you normally would.
+Preserving the existing object is made possible by regarding all operations as
+asymmetrical (or non communicative). Even the union operation, which
+geometrically is symmetrical, is regarded asymmetrical, with one _target_
+container being modifier, and one _modifier_ container defining how to perform
+the modifications.
 
-These tools, unlike the native solid tools, completely ignores nested groups and components. You can e.g. easily cut away a part or add something to a building even if it has windows or other details drawn to it, as long as the primitives (faces and edges) inside it form as solid.
+## Use in Other Extensions
 
-Any tool in the plugin be activated and used to check if a group or component is regarded a solid by the plugin, simply by hovering it and see if it gets highlighted.
+These operations were originally created for use in other extensions (Eneroth
+Townhouse System to be precise) and not be a standalone extension. In time the
+solid operations should be split off into its own library (see #2). For now
+the solids.rb file have to be ripped out of this extension if it is to be used
+elsewhere.
 
-April 2017 this extension was made open source, [available at GitHub](https://github.com/Eneroth3/Eneroth-Solid-Tools).
+## Project history #
 
-## Change Log ##
+This project was started back in 2014 when I (Eneroth3) was still quite new to
+Ruby and programming in general. I worked hard over a few days to clean up,
+refactor and style the code to teh state where it could be published.
 
-### 1.0.0 (2014-11-13) ###
-First Release
-
-### 1.0.1 (2014-11-21) ###
-Limited use to Sketchup Pro (due to EW terms and conditions).
-
-### 1.0.2 (2016-07-25) ###
-Fixed bug in intersecting volumes.
-
-### 2.0.0 ###
-Made open source.
-Added intersect tool.
-Fixed toolbar icons not being checked when tool is active.
-Additional clicks keeps modifying what is already being modified (use Esc to select new solid to modify).
-Allow more than two selected solids to be operated on on tool activation.
-
-# Project Info #
-
-This project was started back in 2014 when I was still quite new to Ruby and
-programming in general. I've worked hard over a few days to clean up, refactor
-and style the code but it still has it oddities.
-
-Since I started this project, not to be a standalone plugin, but to be used
-inside other plugins of mine, and have had much use of it, I'm open sourcing it
-for other to use. I also know there are coders in the SketchUp community that
-are much better at making optimized and stable algorithms than I am so I hope
-making this project open source can also improve the project.
 
 The project follows [bbatsov's style guide for Ruby](https://github.com/bbatsov/ruby-style-guide).

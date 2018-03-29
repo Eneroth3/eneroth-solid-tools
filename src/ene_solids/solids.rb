@@ -32,7 +32,7 @@ module EneSolidTools
   # If you contribute to the project, please don't mess up these differences
   # from the native solid tools. They are very much intended, and even the
   # reason why this project was started in the first place.
-  class Solids
+  module Solids
 
     # Check if a Group or ComponentInstance is solid. If every edge binds an
     # even faces it is considered a solid. Nested groups and components are
