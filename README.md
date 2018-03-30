@@ -38,14 +38,13 @@ the modifications.
 These operations were originally created for use in other extensions (Eneroth
 Townhouse System to be precise) and not be a standalone extension. In time the
 solid operations should be split off into its own library (see #2). For now
-the solids.rb file have to be ripped out of this extension if it is to be used
-elsewhere.
+the solid_operations.rb file have to be ripped out of this extension if it is to
+be used elsewhere.
 
 ## Project history #
 
 This project was started back in 2014 when I (Eneroth3) was still quite new to
 Ruby and programming in general. I worked hard over a few days to clean up,
-refactor and style the code to teh state where it could be published.
+refactor and style the code to the state where it could be published.
 
-
-The project follows [bbatsov's style guide for Ruby](https://github.com/bbatsov/ruby-style-guide).
+Large changes in March 2018.

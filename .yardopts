@@ -1,0 +1,2 @@
+src/**/*.rb
+--no-private

@@ -9,28 +9,24 @@ module SolidTools
 
   Sketchup.require(File.join(PLUGIN_DIR, "menu"))
 
-  # Reload whole extension (except loader) without littering
-  # console. Inspired by ThomTohm's method.
-  # Only works before extension has been scrambled.
+  # Reload extension.
   #
-  # clear_console - Clear console from previous content too (default: false)
-  # undo_last     - Undo last operation in model (default: false).
+  # @param clear_console [Boolean] Whether console should be cleared.
+  # @param undo [Boolean] Whether last oration should be undone.
   #
-  # Returns nothing.
-  def self.reload(clear_console = false, undo_last = false)
-
+  # @return [Void]
+  def self.reload(clear_console = true, undo = false)
     # Hide warnings for already defined constants.
     verbose = $VERBOSE
     $VERBOSE = nil
-
-    Dir.glob(File.join(PLUGIN_DIR, "*.rb")).each { |f| load(f) }
+    Dir.glob(File.join(PLUGIN_DIR, "**/*.{rb,rbe}")).each { |f| load(f) }
     $VERBOSE = verbose
 
     # Use a timer to make call to method itself register to console.
     # Otherwise the user cannot use up arrow to repeat command.
     UI.start_timer(0) { SKETCHUP_CONSOLE.clear } if clear_console
 
-    Sketchup.undo if undo_last
+    Sketchup.undo if undo
 
     nil
   end
