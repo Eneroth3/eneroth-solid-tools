@@ -343,7 +343,7 @@ module SolidOperations
       temp_group.entities,
       IDENTITY,
       true,
-      mesh_geometry(entities2)
+      find_mesh_geometry(entities2)
     )
     entities2.intersect_with(
       false,
@@ -351,7 +351,7 @@ module SolidOperations
       temp_group.entities,
       container1.transformation.inverse,
       true,
-      mesh_geometry(entities1)
+      find_mesh_geometry(entities1)
     )
 
     merge_into(container1, temp_group, true)
@@ -529,7 +529,7 @@ module SolidOperations
   # @param entities [Sketchup::Entities, Array<Entity>]
   #
   # @return [Array<Sketchup::Face, Sketchup::Edge>]
-  def self.mesh_geometry(entities)
+  def self.find_mesh_geometry(entities)
     entities.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) }
   end
 
