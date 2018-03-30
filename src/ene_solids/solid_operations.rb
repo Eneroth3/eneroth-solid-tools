@@ -268,6 +268,7 @@ module SolidOperations
       instance.model.definitions.find { |d| d.instances.include?(instance) }
     end
   end
+  private_class_method :definition
 
   # Test if entity is either group or component instance.
   #
@@ -292,6 +293,7 @@ module SolidOperations
   def self.instance?(entity)
     entity.is_a?(Sketchup::Group) || entity.is_a?(Sketchup::ComponentInstance)
   end
+  private_class_method :instance?
 
   # Remove duplicate points from array.
   #
@@ -305,6 +307,7 @@ module SolidOperations
   def self.uniq_points(points)
     points.reduce([]) { |a, p| a.any? { |p1| p1 == p } ? a : a << p }
   end
+  private_class_method :uniq_points
 
   # Test if point is inside of a face.
   #
@@ -320,6 +323,7 @@ module SolidOperations
 
     pc == Sketchup::Face::PointInside
   end
+  private_class_method :within_face?
 
   # Intersect containers and place intersection edges in both containers.
   #
@@ -560,6 +564,7 @@ module SolidOperations
 
     normal.transform(tr).normalize
   end
+  private_class_method :transform_as_normal
 
   # Transpose of 3X3 matrix (drop translation).
   #
