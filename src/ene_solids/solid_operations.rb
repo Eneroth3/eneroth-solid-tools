@@ -358,8 +358,8 @@ module SolidOperations
       find_mesh_geometry(entities1)
     )
 
-    merge_into(container1, temp_group, true)
-    merge_into(container2, temp_group)
+    interior_hole_hack(merge_into(container1, temp_group, true).grep(Sketchup::Edge))
+    interior_hole_hack(merge_into(container2, temp_group).grep(Sketchup::Edge))
 
     nil
   end
@@ -469,14 +469,14 @@ module SolidOperations
   # @param to_move [Sketchup::Group, Sketchup::ComponentInstance]
   # @param keep_original [Boolean]
   #
-  # @return [Void]
+  # @return [Array<Entity>]
   def self.merge_into(destination, to_move, keep_original = false)
     tr = destination.transformation.inverse * to_move.transformation
-    temp = definition(destination).entities.add_instance(definition(to_move), tr)
+    entities = definition(destination).entities
+    temp = entities.add_instance(definition(to_move), tr)
     to_move.erase! unless keep_original
-    temp.explode
 
-    nil
+    temp.explode
   end
   private_class_method :merge_into
 
@@ -535,6 +535,7 @@ module SolidOperations
   def self.find_mesh_geometry(entities)
     entities.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) }
   end
+  private_class_method :find_mesh_geometry
 
   # Return new vector transformed as a normal.
   #
@@ -581,6 +582,56 @@ module SolidOperations
       0,    0,    0,     a[15]
     ])
   end
+  private_class_method :transpose
+
+  # Form interior holes in faces from edges if possible.
+  #
+  # @param edges [Array<Edge>]
+  #
+  # @return [Void]
+  def self.interior_hole_hack(edges)
+    return if edges.empty?
+
+    entities = edges.first.parent.entities
+    old_entities = entities.to_a
+    edges.each(&:find_faces)
+    new_faces = entities.to_a - old_entities
+
+    # Newly formed faces that are interior faces needs to be kept for their
+    # parent to remain a solid.
+    # Newly formed faces that are not interior faces should be purged.
+    entities.erase_entities(new_faces.select { |f| !wrapping_face(f) })
+
+    nil
+  end
+  private_class_method :interior_hole_hack
+
+  # Find the exterior face that a face forms a hole within, or nil if face isn't
+  # inside another face.
+  #
+  # @param face [SketchUp::Face]
+  #
+  # @example
+  #   ents = Sketchup.active_model.active_entities
+  #   ents.add_face(
+  #     Geom::Point3d.new(0,   0,   0),
+  #     Geom::Point3d.new(0,   1.m, 0),
+  #     Geom::Point3d.new(1.m, 1.m, 0),
+  #     Geom::Point3d.new(1.m, 0,   0)
+  #   )
+  #   inner_face = ents.add_face(
+  #     Geom::Point3d.new(0.25.m, 0.25.m, 0),
+  #     Geom::Point3d.new(0.25.m, 0.75.m, 0),
+  #     Geom::Point3d.new(0.75.m, 0.75.m, 0),
+  #     Geom::Point3d.new(0.75.m, 0.25.m, 0)
+  #   )
+  #   outer_face = SkippyLib::LFace.wrapping_face(inner_face)
+  #
+  # @return [Sketchup::Face, nil]
+  def self.wrapping_face(face)
+    (face.edges.map(&:faces).inject(:&) - [face]).first
+  end
+  private_class_method :wrapping_face
 
 end
 end
