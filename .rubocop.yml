@@ -1,0 +1,108 @@
+# Loosely based on the following rubocop configurations:
+# https://gist.github.com/jhass/a5ae80d87f18e53e7b56
+# https://gist.github.com/thomthom/5a08b248ef786cf60ee9e6c3398e21f1
+
+require: rubocop-sketchup
+
+AllCops:
+  DisplayCopNames: true
+  Exclude:
+    - 'tests/**/*'
+    - 'tools/**/*'
+
+# This cop catches methods that assigns many variables, even if the complexity
+# is low and readability is high.
+Metrics/AbcSize:
+  Enabled: false
+
+# Hacks and workarounds for API oddities may lead to some extra complexity.
+Metrics/CyclomaticComplexity:
+  Max: 8
+
+# Short lines are in general good for readability but splitting up one
+# expression into multiple lines can be less readable. Aim for 80 chars but
+# allow 120.
+Metrics/LineLength:
+  Max: 120
+
+# Aim for 10 lines and less in each methods but accept slightly longer ones.
+Metrics/MethodLength:
+  Max: 20
+
+# This extension defines HTML and Javascript within Ruby files to conceal the
+# source code. This makes very, very long modules.
+Metrics/ModuleLength:
+  Enabled: false
+
+Layout/IndentArray:
+  EnforcedStyle: consistent
+Layout/IndentHash:
+  EnforcedStyle: consistent
+
+# Use wrapping empty lines in modules containing methods (the first and last
+# method should have the same spacing to the module as there are between
+# methods).
+#
+# Don't however use wrapping empty lines for a module that merely wraps another
+# module.
+Layout/EmptyLinesAroundModuleBody:
+  Enabled: false
+Layout/EmptyLinesAroundClassBody:
+  Enabled: false
+
+# A module that merely wraps one single direct child module should not be
+# indented. Every other code block must be indented.
+Layout/IndentationWidth:
+  IgnoredPatterns:
+    - '^\s*module'
+
+# In this project I want to rescue very generally, e.g. to abort an operation
+# no matter what the error was, or to show the error in a messagebox.
+Lint/RescueWithoutErrorClass:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+# Double negation is a handy Ruby idiom to assure a value is a boolean, as there
+# is no to_bool/to_boolean/to_b method. What the cop suggest, !var.nil?, doesn't
+# even cater for boolean false as input.
+Style/DoubleNegation:
+  Enabled: false
+
+# Single quotes being faster is hardly measurable and only affects parse time.
+# Enforcing double quotes reduces the times where you need to change them
+# when introducing an interpolation. Use single quotes only if their semantics
+# are needed.
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+# Catches Observer interface methods.
+Naming/MethodName:
+  Enabled: false
+
+# Conflict too often with Metric/LineLength.
+# https://github.com/bbatsov/rubocop/issues/1332#issuecomment-277503854
+Style/GuardClause:
+  Enabled: false
+
+# Generally there shouldn't be semicolons but on rare occasions multiple
+# expressions on the same line improves readability.
+# For instance if there are several action_callbacks to a HtmlDialog it helps to
+# have each one on a single, all lined up, rather than using 3 lines per
+# callback.
+# The latter can also easily make the methods too long.
+Style/Semicolon:
+  Enabled: false
+
+SketchupDeprecations:
+  Enabled: true
+
+SketchupPerformance:
+  Enabled: true
+
+SketchupRequirements:
+  Enabled: true
+
+SketchupSuggestions:
+  Enabled: true
