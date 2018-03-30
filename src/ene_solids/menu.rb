@@ -38,7 +38,7 @@ module SolidTools
 
       tb = UI::Toolbar.new(EXTENSION.name)
 
-      cmd = UI::Command.new("Union") {Tools::Union.perform_or_activate }
+      cmd = UI::Command.new("Union") { Tools::Union.perform_or_activate }
       cmd.large_icon = cmd.small_icon = File.join(PLUGIN_DIR, "images", "union#{icon_file_extension}")
       cmd.tooltip = "Union"
       cmd.status_bar_text = "Add one solid group or component to another."

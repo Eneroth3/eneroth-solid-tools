@@ -7,7 +7,7 @@ module Tools
   # Common private Superclass for all tools, as they are very similar.
   class Base
 
-    NOT_SOLID_ERROR = "Something went wrong :/\n\nOutput is not a solid."
+    NOT_SOLID_ERROR = "Something went wrong :/\n\nOutput is not a solid.".freeze
 
     # Track which of these tools is active so its menu entry/toolbar icon can be
     # highlighted.
@@ -32,17 +32,16 @@ module Tools
         model.start_operation(self::OPERATOR_NAME, true)
         primary = solids.shift
         until solids.empty?
-          if !SolidOperations.send(self::METHOD_NAME, primary, solids.shift)
-            model.commit_operation
-            UI.messagebox(NOT_SOLID_ERROR)
-            return
-          end
+          next if SolidOperations.send(self::METHOD_NAME, primary, solids.shift)
+          model.commit_operation
+          UI.messagebox(NOT_SOLID_ERROR)
+          return
         end
         model.commit_operation
 
         # Set status text inside 0 timer to override status set by hovering
         # the toolbar button.
-        UI.start_timer(0, false){ Sketchup.status_text = self::STATUS_DONE }
+        UI.start_timer(0, false) { Sketchup.status_text = self::STATUS_DONE }
 
       else
         Sketchup.active_model.select_tool(new)
@@ -67,12 +66,12 @@ module Tools
     end
 
     # @see http://ruby.sketchup.com/Sketchup/Tool.html
-    def deactivate(view)
+    def deactivate(_view)
       @@active_tool_class = nil
     end
 
     # @see http://ruby.sketchup.com/Sketchup/Tool.html
-    def onLButtonDown(flags, x, y, view)
+    def onLButtonDown(_flags, x, y, view)
       # Get what was clicked, return if not a solid.
       @ph.do_pick(x, y)
       picked = @ph.best_picked
@@ -85,7 +84,7 @@ module Tools
         return if picked == @primary
         secondary = picked
         view.model.start_operation(self.class::OPERATOR_NAME, true)
-        if !SolidOperations.send(self.class::METHOD_NAME, @primary, secondary)
+        unless SolidOperations.send(self.class::METHOD_NAME, @primary, secondary)
           UI.messagebox(NOT_SOLID_ERROR)
           reset
         end
@@ -94,7 +93,7 @@ module Tools
     end
 
     # @see http://ruby.sketchup.com/Sketchup/Tool.html
-    def onMouseMove(flags, x, y, view)
+    def onMouseMove(_flags, x, y, _view)
       # Highlight hovered solid by making it the only selected entity.
       # Consistent to rotation, move and scale tool.
       selection = Sketchup.active_model.selection
@@ -109,7 +108,7 @@ module Tools
     end
 
     # @see http://ruby.sketchup.com/Sketchup/Tool.html
-    def onCancel(reason, view)
+    def onCancel(_reason, _view)
       reset
     end
 
@@ -119,13 +118,13 @@ module Tools
     end
 
     # @see http://ruby.sketchup.com/Sketchup/Tool.html
-    def resume(view)
+    def resume(_view)
       Sketchup.status_text = !@primary ? self.class::STATUS_PRIMARY : self.class::STATUS_SECONDARY
     end
 
     # @see https://extensions.sketchup.com/pl/content/eneroth-tool-memory
     def ene_tool_cycler_icon
-      File.join(PLUGIN_DIR, "images", "#{self.class::METHOD_NAME.to_s}.svg")
+      File.join(PLUGIN_DIR, "images", "#{self.class::METHOD_NAME}.svg")
     end
 
     private
@@ -142,41 +141,46 @@ module Tools
 
   # Union Tool.
   class Union < Base
-    CURSOR_FILENAME  = "cursor_union.png"
-    STATUS_PRIMARY   = "Click primary solid group/component to add to."
-    STATUS_SECONDARY = "Click secondary solid group/component to add with. Esc = Select new primary solid."
-    STATUS_DONE      = "Done. By instead activating tool without a selection you can chose which component to alter."
-    OPERATOR_NAME    = "Union"
+    CURSOR_FILENAME  = "cursor_union.png".freeze
+    STATUS_PRIMARY   = "Click primary solid group/component to add to.".freeze
+    STATUS_SECONDARY =
+      "Click secondary solid group/component to add with. Esc = Select new primary solid.".freeze
+    STATUS_DONE      =
+      "Done. By instead activating tool without a selection you can chose which component to alter.".freeze
+    OPERATOR_NAME    = "Union".freeze
     METHOD_NAME      = :union
   end
 
   # Subtract Tool.
   class Subtract < Base
-    CURSOR_FILENAME  = "cursor_subtract.png"
-    STATUS_PRIMARY   = "Click primary solid group/component to subtract from."
-    STATUS_SECONDARY = "Click secondary solid group/component to subtract with. Esc = Select new primary solid."
-    STATUS_DONE      = "Done. By instead activating tool without a selection you can chose what to subtract from what."
-    OPERATOR_NAME    = "Subtract"
+    CURSOR_FILENAME  = "cursor_subtract.png".freeze
+    STATUS_PRIMARY   = "Click primary solid group/component to subtract from.".freeze
+    STATUS_SECONDARY = "Click secondary solid group/component to subtract with. Esc = Select new primary solid.".freeze
+    STATUS_DONE      =
+      "Done. By instead activating tool without a selection you can chose what to subtract from what.".freeze
+    OPERATOR_NAME    = "Subtract".freeze
     METHOD_NAME      = :subtract
   end
 
   # Trim Tool.
   class Trim < Base
-    CURSOR_FILENAME  = "cursor_trim.png"
-    STATUS_PRIMARY   = "Click primary solid group/component to trim."
-    STATUS_SECONDARY = "Click secondary solid group/component to trim away. Esc = Select new primary solid."
-    STATUS_DONE      = "Done. By instead activating tool without a selection you can chose what to trim from what."
-    OPERATOR_NAME    = "Trim"
+    CURSOR_FILENAME  = "cursor_trim.png".freeze
+    STATUS_PRIMARY   = "Click primary solid group/component to trim.".freeze
+    STATUS_SECONDARY = "Click secondary solid group/component to trim away. Esc = Select new primary solid.".freeze
+    STATUS_DONE      =
+      "Done. By instead activating tool without a selection you can chose what to trim from what.".freeze
+    OPERATOR_NAME    = "Trim".freeze
     METHOD_NAME      = :trim
   end
 
   # Intersect Tool.
   class Intersect < Base
-    CURSOR_FILENAME  = "cursor_intersect.png"
-    STATUS_PRIMARY   = "Click original solid group/component to intersect."
-    STATUS_SECONDARY = "Click secondary solid group/component intersect with. Esc = Select new primary solid."
-    STATUS_DONE      = "Done. By instead activating tool without a selection you can chose what solid to modify."
-    OPERATOR_NAME    = "Intersect"
+    CURSOR_FILENAME  = "cursor_intersect.png".freeze
+    STATUS_PRIMARY   = "Click original solid group/component to intersect.".freeze
+    STATUS_SECONDARY = "Click secondary solid group/component intersect with. Esc = Select new primary solid.".freeze
+    STATUS_DONE      =
+      "Done. By instead activating tool without a selection you can chose what solid to modify.".freeze
+    OPERATOR_NAME    = "Intersect".freeze
     METHOD_NAME      = :intersect
   end
 

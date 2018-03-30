@@ -25,14 +25,15 @@ Metrics/CyclomaticComplexity:
 Metrics/LineLength:
   Max: 120
 
-# Aim for 10 lines and less in each methods but accept slightly longer ones.
-Metrics/MethodLength:
-  Max: 20
-
-# This extension defines HTML and Javascript within Ruby files to conceal the
-# source code. This makes very, very long modules.
 Metrics/ModuleLength:
   Enabled: false
+
+# Aim for as short methods as possible.
+Metrics/MethodLength:
+  Max: 25
+
+Metrics/PerceivedComplexity:
+  Max: 9
 
 Layout/IndentArray:
   EnforcedStyle: consistent
@@ -56,9 +57,13 @@ Layout/IndentationWidth:
   IgnoredPatterns:
     - '^\s*module'
 
-# In this project I want to rescue very generally, e.g. to abort an operation
-# no matter what the error was, or to show the error in a messagebox.
-Lint/RescueWithoutErrorClass:
+# Catches Observer and Tool interface methods from SketchUp Ruby API.
+Naming/MethodName:
+  Enabled: false
+
+# Class vars are used over class instance vars when they are supposed to be
+# shared by all instances.
+Style/ClassVars:
   Enabled: false
 
 Style/Documentation:
@@ -77,21 +82,13 @@ Style/DoubleNegation:
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 
-# Catches Observer interface methods.
-Naming/MethodName:
-  Enabled: false
-
 # Conflict too often with Metric/LineLength.
 # https://github.com/bbatsov/rubocop/issues/1332#issuecomment-277503854
 Style/GuardClause:
   Enabled: false
 
-# Generally there shouldn't be semicolons but on rare occasions multiple
-# expressions on the same line improves readability.
-# For instance if there are several action_callbacks to a HtmlDialog it helps to
-# have each one on a single, all lined up, rather than using 3 lines per
-# callback.
-# The latter can also easily make the methods too long.
+# In rare occasions several expressions on the same line can increase code
+# readability, e.g. if a HtmlDialog callbacks can be made single line.
 Style/Semicolon:
   Enabled: false
 
