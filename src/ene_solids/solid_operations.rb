@@ -418,13 +418,12 @@ module SolidOperations
   def self.find_corresponding_faces(container1, container2, orientation)
     faces = []
 
-    # FIXME: Transform normals correctly, not as any vectors.
     definition(container1).entities.grep(Sketchup::Face) do |face1|
-      normal1 = face1.normal.transform(container1.transformation)
+      normal1 = transform_as_normal(face1.normal, container1.transformation)
       points1 = face1.vertices.map { |v| v.position.transform(container1.transformation) }
       definition(container2).entities.grep(Sketchup::Face) do |face2|
         next unless face2.is_a?(Sketchup::Face)
-        normal2 = face2.normal.transform(container2.transformation)
+        normal2 = transform_as_normal(face2.normal, container2.transformation)
         next unless normal1.parallel?(normal2)
         points2 = face2.vertices.map { |v| v.position.transform(container2.transformation) }
         next unless points1.all? { |v| points2.include?(v) }
@@ -531,6 +530,51 @@ module SolidOperations
   # @return [Array<Sketchup::Face, Sketchup::Edge>]
   def self.find_mesh_geometry(entities)
     entities.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) }
+  end
+
+  # Return new vector transformed as a normal.
+  #
+  # Transforming a normal vector as a ordinary vector can give it a faulty
+  # direction if the transformation is non-uniformly scaled or sheared. This
+  # method assures the vector stays perpendicular to its perpendicular plane
+  # when a transformation is applied.
+  #
+  # @param normal [Geom::Vector3d]
+  # @param transformation [Geom::Transformation]
+  #
+  # @example
+  #   # transform_as_normal VS native #transform
+  #   skewed_tr = SkippyLib::LGeom::LTransformation.create_from_axes(
+  #     ORIGIN,
+  #     Geom::Vector3d.new(1, 0.3, 0),
+  #     Geom::Vector3d.new(0, 1, 0),
+  #     Geom::Vector3d.new(0, 0, 1)
+  #   )
+  #   normal = Y_AXIS
+  #   puts "Transformed as vector: #{normal.transform(skewed_tr)}"
+  #   puts "Transformed as normal: #{SkippyLib::LGeom::LVector3d.transform_as_normal(normal, skewed_tr)}"
+  #
+  # @return [Geom::Vector3d]
+  def self.transform_as_normal(normal, transformation)
+    tr = transpose(transformation).inverse
+
+    normal.transform(tr).normalize
+  end
+
+  # Transpose of 3X3 matrix (drop translation).
+  #
+  # @param transformation [Geom::Transformation]
+  #
+  # @return [Geom::Transformation]
+  def self.transpose(transformation)
+    a = transformation.to_a
+
+    Geom::Transformation.new([
+      a[0], a[4], a[8],  0,
+      a[1], a[5], a[9],  0,
+      a[2], a[6], a[10], 0,
+      0,    0,    0,     a[15]
+    ])
   end
 
 end
