@@ -1,24 +1,56 @@
 # Eneroth Solid Tools (Pro Only)
 
+Solid tools designed to feel more native to SketchUp than the native solid
+tools.
+
+These tools are designed to modify objects in place, rather than creating new
+groups to hold the output. This means all instances of a component can be edited
+simultaneously, as components are supposed to behave (and if you don't want
+that, just make it unique first).
+
+For this to work all operations have one (or more) target objects to edit, and
+any number of modifier objects defining how to edit it. Even union, that
+geometrically is symmetrical, has a defined target.
+
+These tools also honor the material inheritance model. If you have painted a
+group as a whole with a material, not its individual faces, these tools respect
+that. After the operation the target solid retains the same material as it had
+prior to the operations, and so do all the faces.
+
+Layers, hidden state, axes, BIM data and other properties of the target are kept
+too. Even variables pointing at the objects stay valid, making these operations
+useful in other extensions too.
+
+These tools uses an extended definition of a solid, that ignores nested groups
+and components. For instance a group containing a house can be considered solid
+even if there are cut-opening door and window components. You can still use the
+tools to add or subtract volumes. To check if something is considered solid by
+this definition, just activate one of the tools, hover the object and see if it
+gets picked up.
+
+Lastly these tools can be used on multiple objects at once. For instance you can
+select a whole timber frame along with cladding and trim it using a box to see
+into the building.
+
 Menu: *Tools > Eneroth Solid Tools*.
 
-*Union*: Add one solid group or component to another.
+*Union*: Unite solid groups/components to larger ones.
 
-*Subtract*: Subtract one solid group or component from another.
+*Subtract*: Subtract solid groups/components.
 
-*Trim*: Trim away one solid group or component from another.
+*Trim*: Trim away solid groups/components.
 
-If the tools are activated with two or more solids selected, the plugin guesses the biggest one is the primary (the one to keep but modify) and the smaller are the secondary ones, deciding how the primary one is modified.
+*Intersect*: Find overlap between solid groups/components.
 
-If tool is activated with no selection you'll be asked to click each solid, first the primary one and then any number of secondary ones used to alter it.
+To use multiple targets in Trim and Subtract, pre-select prior to activating the
+tool.
 
-The primary solid will keep its layer, material, attributes and even ruby variables pointing at it unlike how native solid tools work. Layers and attributes of entities inside both of the solids will also be kept.
+Union and Intersect on the other hand can be instantly used, without activating
+the tool, if selected 2 or more solids before pressing the button.
 
-If the primary solid is a component it will unlike the native solid tools keep being a component and all instances of it will be altered at once, just as components are supposed to behave. If you want to alter only this one instance, first right click it and make it unique as you normally would.
-
-These tools, unlike the native solid tools, completely ignores nested groups and components. You can e.g. easily cut away a part or add something to a building even if it has windows or other details drawn to it, as long as the primitives (faces and edges) inside it form as solid.
-
-Any tool in the plugin be activated and used to check if a group or component is regarded a solid by the plugin, simply by hovering it and see if it gets highlighted.
+Subtract and trim can be activated with any number of pre-selected solids to
+use them all as targets. Union and intersect can perform quick operations on
+selected solids, without even activating the tools.
 
 April 2017 this extension was made open source, [available at GitHub](https://github.com/Eneroth3/Eneroth-Solid-Tools).
 

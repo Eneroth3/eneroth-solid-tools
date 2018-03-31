@@ -1,10 +1,12 @@
 module Eneroth
 module SolidTools
+
+Sketchup.require(File.join(PLUGIN_DIR, "solid_operations"))
+Sketchup.require(File.join(PLUGIN_DIR, "bulk_solid_operations"))
+
 module Tools
 
-  Sketchup.require(File.join(PLUGIN_DIR, "solid_operations"))
-
-  # Common private Superclass for all tools, as they are very similar.
+  # All tools.
   class Base
 
     NOT_SOLID_ERROR = "Something went wrong :/\n\nOutput is not a solid.".freeze
@@ -15,36 +17,26 @@ module Tools
 
     # Perform operation or activate tool, depending on selection.
     #
-    # If selection contains two or more solids, the tool is activated. Otherwise
-    # the action is carried out diretcly, without changing active tool.
+    # If selection contains two or more solids, the action is instantly
+    # performed, with an arbitrary target. Otherwise the tool is activated.
     #
     # @return [Void]
     def self.perform_or_activate
       model = Sketchup.active_model
       selection = model.selection
-      if selection.size > 1 && selection.all? { |e| SolidOperations.solid?(e) }
+      solids = selection.select { |s| SolidOperations.solid?(s) }
+      if solids.size > 1
+        # Sort by volume for a little less arbitrary result.
+        # Don't use native #volume method as SketchUp may not consider objects
+        # to be solids (there can be nested containers).
+        solids = solids.sort_by { |e| -bb_volume(e.bounds) }
 
-        # Sort by bounding box volume since no order is given.
-        # To manually define the what solid to modify and what to modify with
-        # user must activate the tool.
-        solids = selection.to_a.sort_by { |e| bb = e.bounds; bb.width * bb.depth * bb.height }.reverse
+        target = solids.shift
+        operate(target, solids)
 
-        model.start_operation(self::OPERATOR_NAME, true)
-        primary = solids.shift
-        until solids.empty?
-          next if SolidOperations.send(self::METHOD_NAME, primary, solids.shift)
-          model.commit_operation
-          UI.messagebox(NOT_SOLID_ERROR)
-          return
-        end
-        model.commit_operation
-
-        # Set status text inside 0 timer to override status set by hovering
-        # the toolbar button.
-        UI.start_timer(0, false) { Sketchup.status_text = self::STATUS_DONE }
-
+        delayed_status(self::STS_DONE_INSTANT)
       else
-        Sketchup.active_model.select_tool(new)
+        model.select_tool(new)
       end
 
       nil
@@ -57,12 +49,21 @@ module Tools
       @@active_tool_class == self
     end
 
+    def initialize
+      # For this class this is a single Entity is target but for subclass an
+      # Array of Entity objects is the targets.
+      # All references to target/targets need to be in simple accessor like
+      # methods that can be easily overridden.
+      @target = nil
+
+      @ph     = Sketchup.active_model.active_view.pick_helper
+      @cursor = create_cursor
+    end
+
     # @see http://ruby.sketchup.com/Sketchup/Tool.html
     def activate
-      @ph = Sketchup.active_model.active_view.pick_helper
-      @cursor = UI.create_cursor(File.join(PLUGIN_DIR, "images", self.class::CURSOR_FILENAME), 2, 2)
       @@active_tool_class = self.class
-      reset
+      display_status
     end
 
     # @see http://ruby.sketchup.com/Sketchup/Tool.html
@@ -71,24 +72,19 @@ module Tools
     end
 
     # @see http://ruby.sketchup.com/Sketchup/Tool.html
-    def onLButtonDown(_flags, x, y, view)
-      # Get what was clicked, return if not a solid.
+    def onLButtonDown(_flags, x, y, _view)
       @ph.do_pick(x, y)
       picked = @ph.best_picked
       return unless SolidOperations.solid?(picked)
 
-      if !@primary
-        Sketchup.status_text = self.class::STATUS_SECONDARY
-        @primary = picked
+      if picking_target?
+        pick_target(picked)
+        display_status
       else
-        return if picked == @primary
-        secondary = picked
-        view.model.start_operation(self.class::OPERATOR_NAME, true)
-        unless SolidOperations.send(self.class::METHOD_NAME, @primary, secondary)
-          UI.messagebox(NOT_SOLID_ERROR)
-          reset
-        end
-        view.model.commit_operation
+        return if target?(picked)
+        pick_modifier(picked)
+        # Status text isn't changed as user can keep pick modifiers to
+        # repeatedly perform action.
       end
     end
 
@@ -98,11 +94,12 @@ module Tools
       # Consistent to rotation, move and scale tool.
       selection = Sketchup.active_model.selection
       selection.clear
-      selection.add(@primary) if @primary
+
+      select_target(selection) unless picking_target?
 
       @ph.do_pick(x, y)
       picked = @ph.best_picked
-      return if picked == @primary
+      return if target?(picked)
       return unless SolidOperations.solid?(picked)
       selection.add(picked)
     end
@@ -119,69 +116,207 @@ module Tools
 
     # @see http://ruby.sketchup.com/Sketchup/Tool.html
     def resume(_view)
-      Sketchup.status_text = !@primary ? self.class::STATUS_PRIMARY : self.class::STATUS_SECONDARY
+      display_status
     end
 
     # @see https://extensions.sketchup.com/pl/content/eneroth-tool-memory
     def ene_tool_cycler_icon
-      File.join(PLUGIN_DIR, "images", "#{self.class::METHOD_NAME}.svg")
+      File.join(PLUGIN_DIR, "images", "#{self.class.identifier}.svg")
+    end
+
+    # Should be protected
+
+    # Calculate volume of bounding box.
+    #
+    # @param bb [Geom::BoundingBox]
+    #
+    # @return [Float] - volume in cubic inches.
+    def self.bb_volume(bb)
+      bb.width * bb.depth * bb.height
+    end
+
+    # Set statusbar text that stays until the user performs an action changing
+    # it, e.g. hover a toolbar.
+    #
+    # @param text [String]
+    #
+    # @return [Void]
+    def self.delayed_status(text)
+      # Set status text inside 0 timer to override status set by operation
+      # finishing.
+      UI.start_timer(0, false) { Sketchup.status_text = text }
+
+      nil
+    end
+
+    # Get operation identifier for current tool.
+    #
+    # @return [Symbol]
+    def self.identifier
+      # Based on Tool's class name.
+      name.split("::").last.downcase.to_sym
+    end
+
+    # Perform tool's operation.
+    #
+    # Show feedback if operation failed.
+    #
+    # @return [Void]
+    def self.operate(target, modifiers)
+      modifiers = [modifiers] unless modifiers.is_a?(Array)
+
+      model = Sketchup.active_model
+      model.start_operation(self::OPERATOR_NAME, true)
+      unless BulkSolidOperations.send(identifier, target, modifiers)
+        UI.messagebox(NOT_SOLID_ERROR)
+        reset
+      end
+      model.commit_operation
+
+      nil
     end
 
     private
 
+    # Create cursor.
+    #
+    # @return [Integer]
+    def create_cursor
+      UI.create_cursor(
+        File.join(PLUGIN_DIR, "images", "cursor_#{self.class.identifier}.png"),
+        2,
+        2
+      )
+    end
+
+    # Check if entity is set to be target.
+    def target?(solid)
+      @target == solid
+    end
+
+    # Pick modifier and perform operation with it.
+    def pick_modifier(solid)
+      self.class.operate(@target, solid)
+    end
+
+    # Pick a solid to use as target.
+    def pick_target(solid)
+      @target = solid
+    end
+
+    # Check target or modifier is being picked.
+    def picking_target?
+      !@target
+    end
+
     # Reset tool to its original state.
     def reset
       Sketchup.active_model.selection.clear
-      Sketchup.status_text = self.class::STATUS_PRIMARY
-      @primary = nil
+      reset_target
+      display_status
+    end
+
+    # Reset target to clean state.
+    def reset_target
+      @target = nil
+    end
+
+    # Add target to model selection.
+    def select_target(selection)
+      selection.add(@target)
+    end
+
+    # Display status text
+    def display_status
+      Sketchup.status_text = picking_target? ? self.class::STS_PICK_TARGET : self.class::STS_PICK_MODIFIER
     end
 
   end
   private_constant :Base
 
+  # Tools that support multiple target solids.
+  class MultiTarget < Base
+
+    # Always activate tool, regardless of selection.
+    def self.perform_or_activate
+      model = Sketchup.active_model
+      model.select_tool(new)
+
+      nil
+    end
+
+    def initialize
+      super
+      selection = Sketchup.active_model.selection
+      @targets = selection.select { |s| SolidOperations.solid?(s) }
+    end
+
+    # Check if entity is set to be target.
+    def target?(solid)
+      @targets.include?(solid)
+    end
+
+    # Pick modifier and perform operation with it.
+    def pick_modifier(solid)
+      self.class.operate(@targets, solid)
+    end
+
+    # Pick a solid to use as target.
+    def pick_target(solid)
+      @targets << solid
+    end
+
+    # Check target or modifier is being picked.
+    def picking_target?
+      @targets.empty?
+    end
+
+    # Reset target to clean state.
+    def reset_target
+      @targets.clear
+    end
+
+    # Add target to model selection.
+    def select_target(selection)
+      @targets.each { |t| selection.add(t) }
+    end
+  end
+  private_constant :MultiTarget
+
   # Union Tool.
   class Union < Base
-    CURSOR_FILENAME  = "cursor_union.png".freeze
-    STATUS_PRIMARY   = "Click primary solid group/component to add to.".freeze
-    STATUS_SECONDARY =
-      "Click secondary solid group/component to add with. Esc = Select new primary solid.".freeze
-    STATUS_DONE      =
+    # TODO: Extract strings to separate language file, e.g. using Ordbok.
+    # Have these classes being empty bodied and get strings directly in BaseTool
+    # based on identifier.
+    STS_PICK_TARGET   = "Click target solid group/component to add to.".freeze
+    STS_PICK_MODIFIER =
+      "Click modifier solid group/component to add with. Esc = Select new target solid.".freeze
+    STS_DONE_INSTANT  =
       "Done. By instead activating tool without a selection you can chose which component to alter.".freeze
-    OPERATOR_NAME    = "Union".freeze
-    METHOD_NAME      = :union
+    OPERATOR_NAME     = "Union".freeze
   end
 
   # Subtract Tool.
-  class Subtract < Base
-    CURSOR_FILENAME  = "cursor_subtract.png".freeze
-    STATUS_PRIMARY   = "Click primary solid group/component to subtract from.".freeze
-    STATUS_SECONDARY = "Click secondary solid group/component to subtract with. Esc = Select new primary solid.".freeze
-    STATUS_DONE      =
-      "Done. By instead activating tool without a selection you can chose what to subtract from what.".freeze
-    OPERATOR_NAME    = "Subtract".freeze
-    METHOD_NAME      = :subtract
+  class Subtract < MultiTarget
+    STS_PICK_TARGET   = "Click target solid group/component to subtract from.".freeze
+    STS_PICK_MODIFIER = "Click modifier solid group/component to subtract with. Esc = Select new target solid.".freeze
+    OPERATOR_NAME     = "Subtract".freeze
   end
 
   # Trim Tool.
-  class Trim < Base
-    CURSOR_FILENAME  = "cursor_trim.png".freeze
-    STATUS_PRIMARY   = "Click primary solid group/component to trim.".freeze
-    STATUS_SECONDARY = "Click secondary solid group/component to trim away. Esc = Select new primary solid.".freeze
-    STATUS_DONE      =
-      "Done. By instead activating tool without a selection you can chose what to trim from what.".freeze
-    OPERATOR_NAME    = "Trim".freeze
-    METHOD_NAME      = :trim
+  class Trim < MultiTarget
+    STS_PICK_TARGET   = "Click target solid group/component to trim.".freeze
+    STS_PICK_MODIFIER = "Click modifier solid group/component to trim away. Esc = Select new target solid.".freeze
+    OPERATOR_NAME     = "Trim".freeze
   end
 
   # Intersect Tool.
   class Intersect < Base
-    CURSOR_FILENAME  = "cursor_intersect.png".freeze
-    STATUS_PRIMARY   = "Click original solid group/component to intersect.".freeze
-    STATUS_SECONDARY = "Click secondary solid group/component intersect with. Esc = Select new primary solid.".freeze
-    STATUS_DONE      =
-      "Done. By instead activating tool without a selection you can chose what solid to modify.".freeze
-    OPERATOR_NAME    = "Intersect".freeze
-    METHOD_NAME      = :intersect
+    STS_PICK_TARGET   = "Click target solid group/component to intersect.".freeze
+    STS_PICK_MODIFIER = "Click modifier solid group/component intersect with. Esc = Select new target solid.".freeze
+    STS_DONE_INSTANT  =
+      "Done. By instead activating tool without a selection you can chose what solid to alter.".freeze
+    OPERATOR_NAME     = "Intersect".freeze
   end
 
 end

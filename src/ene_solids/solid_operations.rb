@@ -128,11 +128,25 @@ module SolidOperations
   #
   # @param target [Sketchup::Group, Sketchup::ComponentInstance]
   # @param modifier [Sketchup::Group, Sketchup::ComponentInstance]
-  # @param keep_modifer [Boolean] Keeping modifier makes this a trim operation.
   #
   # @return [Boolean, nil] `nil` denotes failure in algorithm. `false` denotes one
   #   of the containers wasn't a solid.
-  def self.subtract(target, modifier, keep_modifer = false)
+  def self.subtract(target, modifier)
+    status = trim(target, modifier)
+    return status unless status
+    modifier.erase!
+
+    true
+  end
+
+  # Trim one container from another.
+  #
+  # @param target [Sketchup::Group, Sketchup::ComponentInstance]
+  # @param modifier [Sketchup::Group, Sketchup::ComponentInstance]
+  #
+  # @return [Boolean, nil] `nil` denotes failure in algorithm. `false` denotes one
+  #   of the containers wasn't a solid.
+  def self.trim(target, modifier)
     return false unless solid?(target) && solid?(modifier)
     target.make_unique if target.is_a?(Sketchup::Group)
 
@@ -141,7 +155,7 @@ module SolidOperations
     # make_unique is not used since this would create a component visible in
     # the component browser if modifier is a component.
     temp_group = target.parent.entities.add_group
-    merge_into(temp_group, modifier, keep_modifer)
+    merge_into(temp_group, modifier, true)
     modifier = temp_group
 
     target_ents = definition(target).entities
@@ -183,17 +197,6 @@ module SolidOperations
     weld_hack(target_ents)
 
     solid?(target) ? true : nil
-  end
-
-  # Trim one container from another.
-  #
-  # @param target [Sketchup::Group, Sketchup::ComponentInstance]
-  # @param modifier [Sketchup::Group, Sketchup::ComponentInstance]
-  #
-  # @return [Boolean, nil] `nil` denotes failure in algorithm. `false` denotes one
-  #   of the containers wasn't a solid.
-  def self.trim(target, modifier)
-    subtract(target, modifier, true)
   end
 
   # Intersect one container with another.
