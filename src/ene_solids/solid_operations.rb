@@ -488,8 +488,19 @@ module SolidOperations
       next unless e.is_a?(Sketchup::Edge)
       next unless e.faces.size == 2
 
+      # This check gives false positive on very small angles.
+      next unless e.faces[0].normal.parallel?(e.faces[1].normal)
+
+      # This check gives false positive if one face is very narrow, and all its
+      # points are almost on the plane of the other face, despite a small angle
+      # in between.
+      # Compare points of both faces to the other face's plane to reduce risk of
+      # false positive.
       e.faces[0].vertices.all? do |v|
         e.faces[1].classify_point(v.position) != Sketchup::Face::PointNotOnPlane
+      end
+      e.faces[1].vertices.all? do |v|
+        e.faces[0].classify_point(v.position) != Sketchup::Face::PointNotOnPlane
       end
     end
   end
