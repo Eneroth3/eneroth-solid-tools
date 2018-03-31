@@ -33,7 +33,7 @@ module SolidOperations
   #
   # @return [Boolean]
   def self.within?(point, container, on_boundary = true, verify_solid = true)
-    return if verify_solid && !solid?(container)
+    return false if verify_solid && !solid?(container)
 
     point = point.transform(container.transformation.inverse)
 
@@ -76,7 +76,7 @@ module SolidOperations
   # @return [Boolean, nil] `nil` denotes failure in algorithm. `false` denotes one
   #   of the containers wasn't a solid.
   def self.union(target, modifier)
-    return unless solid?(target) && solid?(modifier)
+    return false unless solid?(target) && solid?(modifier)
     target.make_unique if target.is_a?(Sketchup::Group)
 
     # Copy the content of modifier into a temporary group where it can safely
@@ -133,7 +133,7 @@ module SolidOperations
   # @return [Boolean, nil] `nil` denotes failure in algorithm. `false` denotes one
   #   of the containers wasn't a solid.
   def self.subtract(target, modifier, keep_modifer = false)
-    return unless solid?(target) && solid?(modifier)
+    return false unless solid?(target) && solid?(modifier)
     target.make_unique if target.is_a?(Sketchup::Group)
 
     # Copy the content of modifier into a temporary group where it can safely
@@ -367,7 +367,7 @@ module SolidOperations
   #
   # @param face [Sketchup::Face]
   #
-  # @return [Geom::Point3d]
+  # @return [Geom::Point3d, nil] nil is returned for zero area faces.
   def self.point_at_face(face)
     # Sometimes invalid faces gets created when intersecting.
     # These are removed when validity check run.
