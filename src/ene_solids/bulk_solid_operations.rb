@@ -75,11 +75,13 @@ module BulkSolidOperations
     targets = [targets] unless targets.is_a?(Array)
 
     targets.each do |target|
-      modifiers = modifiers.dup
-      until modifiers.empty?
-        return nil unless SolidOperations.subtract(target, modifiers.shift, keep_modifer)
+      modifiers_dup = modifiers.dup
+      until modifiers_dup.empty?
+        return nil unless SolidOperations.subtract(target, modifiers_dup.shift, true)
       end
     end
+
+    modifiers.first.parent.entities.erase_entities(modifiers) unless keep_modifer
 
     true
   end
