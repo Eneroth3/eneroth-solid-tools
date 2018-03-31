@@ -24,11 +24,12 @@ module Tools
     def self.perform_or_activate
       model = Sketchup.active_model
       selection = model.selection
-      if BulkSolidOperations.solid?(selection) && selection.size > 1
+      solids = selection.select { |s| SolidOperations.solid?(s) }
+      if solids.size > 1
         # Sort by volume for a little less arbitrary result.
         # Don't use native #volume method as SketchUp may not consider objects
         # to be solids (there can be nested containers).
-        solids = selection.to_a.sort_by { |e| -bb_volume(e.bounds) }
+        solids = solids.sort_by { |e| -bb_volume(e.bounds) }
 
         target = solids.shift
         operate(target, solids)
