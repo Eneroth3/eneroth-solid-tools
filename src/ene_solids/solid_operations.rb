@@ -332,8 +332,6 @@ module SolidOperations
   #
   # @return [Void]
   def self.add_intersection_edges(container1, container2)
-    # FIXME: Doesn't currently make interior holes in faces.
-
     entities1 = definition(container1).entities
     entities2 = definition(container2).entities
 
@@ -597,10 +595,14 @@ module SolidOperations
     edges.each(&:find_faces)
     new_faces = entities.to_a - old_entities
 
-    # Newly formed faces that are interior faces needs to be kept for their
-    # parent to remain a solid.
-    # Newly formed faces that are not interior faces should be purged.
-    entities.erase_entities(new_faces.select { |f| !wrapping_face(f) })
+    # Newly formed faces forming holes inside of other faces need to be kept for
+    # the solid volume to be remained defined.
+    # Some newly formed faces however are located where there was no face before,
+    # and must thus be removed for the original volume to remain.
+    # Even some new faces formed inside of other faces may be needed to be
+    # removed, if there are already faces around the hole defining a
+    # recess/bump.
+    entities.erase_entities(new_faces.select { |f| !wrapping_face(f) || f.edges.any? { |e| e.faces.size != 2 }})
 
     nil
   end
