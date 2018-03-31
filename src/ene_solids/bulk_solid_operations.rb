@@ -67,21 +67,13 @@ module BulkSolidOperations
   # @param targets [Sketchup::Group, Sketchup::ComponentInstance,
   #   Array<Sketchup::Group, Sketchup::ComponentInstance>]
   # @param modifiers [Array<Sketchup::Group, Sketchup::ComponentInstance>]
-  # @param keep_modifer [Boolean] Keeping modifier makes this a trim operation.
   #
   # @return [Boolean, nil] `nil` denotes failure in algorithm. `false` denotes one
   #   of the containers wasn't a solid.
-  def self.subtract(targets, modifiers, keep_modifer = false)
-    targets = [targets] unless targets.is_a?(Array)
-
-    targets.each do |target|
-      modifiers_dup = modifiers.dup
-      until modifiers_dup.empty?
-        return nil unless SolidOperations.subtract(target, modifiers_dup.shift, true)
-      end
-    end
-
-    modifiers.first.parent.entities.erase_entities(modifiers) unless keep_modifer
+  def self.subtract(targets, modifiers)
+    status = trim(targets, modifiers)
+    return status unless status
+    modifiers.first.parent.entities.erase_entities(modifiers)
 
     true
   end
@@ -95,7 +87,14 @@ module BulkSolidOperations
   # @return [Boolean, nil] `nil` denotes failure in algorithm. `false` denotes one
   #   of the containers wasn't a solid.
   def self.trim(targets, modifiers)
-    subtract(targets, modifiers, true)
+    targets = [targets] unless targets.is_a?(Array)
+
+    targets.each do |target|
+      modifiers_dup = modifiers.dup
+      until modifiers_dup.empty?
+        return nil unless SolidOperations.trim(target, modifiers_dup.shift)
+      end
+    end
   end
 
   # Intersect one container multiple others.
