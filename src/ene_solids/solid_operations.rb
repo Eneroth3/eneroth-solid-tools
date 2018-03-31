@@ -332,8 +332,6 @@ module SolidOperations
   #
   # @return [Void]
   def self.add_intersection_edges(container1, container2)
-    # FIXME: Doesn't currently make interior holes in faces.
-
     entities1 = definition(container1).entities
     entities2 = definition(container2).entities
 
@@ -358,8 +356,8 @@ module SolidOperations
       find_mesh_geometry(entities1)
     )
 
-    merge_into(container1, temp_group, true)
-    merge_into(container2, temp_group)
+    interior_hole_hack(merge_into(container1, temp_group, true).grep(Sketchup::Edge))
+    interior_hole_hack(merge_into(container2, temp_group).grep(Sketchup::Edge))
 
     nil
   end
@@ -469,14 +467,14 @@ module SolidOperations
   # @param to_move [Sketchup::Group, Sketchup::ComponentInstance]
   # @param keep_original [Boolean]
   #
-  # @return [Void]
+  # @return [Array<Entity>]
   def self.merge_into(destination, to_move, keep_original = false)
     tr = destination.transformation.inverse * to_move.transformation
-    temp = definition(destination).entities.add_instance(definition(to_move), tr)
+    entities = definition(destination).entities
+    temp = entities.add_instance(definition(to_move), tr)
     to_move.erase! unless keep_original
-    temp.explode
 
-    nil
+    temp.explode
   end
   private_class_method :merge_into
 
@@ -490,8 +488,19 @@ module SolidOperations
       next unless e.is_a?(Sketchup::Edge)
       next unless e.faces.size == 2
 
+      # This check gives false positive on very small angles.
+      next unless e.faces[0].normal.parallel?(e.faces[1].normal)
+
+      # This check gives false positive if one face is very narrow, and all its
+      # points are almost on the plane of the other face, despite a small angle
+      # in between.
+      # Compare points of both faces to the other face's plane to reduce risk of
+      # false positive.
       e.faces[0].vertices.all? do |v|
         e.faces[1].classify_point(v.position) != Sketchup::Face::PointNotOnPlane
+      end
+      e.faces[1].vertices.all? do |v|
+        e.faces[0].classify_point(v.position) != Sketchup::Face::PointNotOnPlane
       end
     end
   end
@@ -535,6 +544,7 @@ module SolidOperations
   def self.find_mesh_geometry(entities)
     entities.select { |e| [Sketchup::Face, Sketchup::Edge].include?(e.class) }
   end
+  private_class_method :find_mesh_geometry
 
   # Return new vector transformed as a normal.
   #
@@ -581,6 +591,60 @@ module SolidOperations
       0,    0,    0,     a[15]
     ])
   end
+  private_class_method :transpose
+
+  # Form interior holes in faces from edges if possible.
+  #
+  # @param edges [Array<Edge>]
+  #
+  # @return [Void]
+  def self.interior_hole_hack(edges)
+    return if edges.empty?
+
+    entities = edges.first.parent.entities
+    old_entities = entities.to_a
+    edges.each(&:find_faces)
+    new_faces = entities.to_a - old_entities
+
+    # Newly formed faces forming holes inside of other faces need to be kept for
+    # the solid volume to be remained defined.
+    # Some newly formed faces however are located where there was no face before,
+    # and must thus be removed for the original volume to remain.
+    # Even some new faces formed inside of other faces may be needed to be
+    # removed, if there are already faces around the hole defining a
+    # recess/bump.
+    entities.erase_entities(new_faces.select { |f| !wrapping_face(f) || f.edges.any? { |e| e.faces.size != 2 }})
+
+    nil
+  end
+  private_class_method :interior_hole_hack
+
+  # Find the exterior face that a face forms a hole within, or nil if face isn't
+  # inside another face.
+  #
+  # @param face [SketchUp::Face]
+  #
+  # @example
+  #   ents = Sketchup.active_model.active_entities
+  #   ents.add_face(
+  #     Geom::Point3d.new(0,   0,   0),
+  #     Geom::Point3d.new(0,   1.m, 0),
+  #     Geom::Point3d.new(1.m, 1.m, 0),
+  #     Geom::Point3d.new(1.m, 0,   0)
+  #   )
+  #   inner_face = ents.add_face(
+  #     Geom::Point3d.new(0.25.m, 0.25.m, 0),
+  #     Geom::Point3d.new(0.25.m, 0.75.m, 0),
+  #     Geom::Point3d.new(0.75.m, 0.75.m, 0),
+  #     Geom::Point3d.new(0.75.m, 0.25.m, 0)
+  #   )
+  #   outer_face = SkippyLib::LFace.wrapping_face(inner_face)
+  #
+  # @return [Sketchup::Face, nil]
+  def self.wrapping_face(face)
+    (face.edges.map(&:faces).inject(:&) - [face]).first
+  end
+  private_class_method :wrapping_face
 
 end
 end
