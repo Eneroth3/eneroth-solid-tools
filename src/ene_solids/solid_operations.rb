@@ -616,7 +616,7 @@ module SolidOperations
     # Even some new faces formed inside of other faces may be needed to be
     # removed, if there are already faces around the hole defining a
     # recess/bump.
-    entities.erase_entities(new_faces.select { |f| !wrapping_face(f) || f.edges.any? { |e| e.faces.size != 2 }})
+    entities.erase_entities(new_faces.select { |f| !wrapping_face(f) || f.edges.any? { |e| e.faces.size != 2 } })
 
     nil
   end
