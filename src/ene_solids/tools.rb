@@ -288,9 +288,9 @@ module Tools
     # TODO: Extract strings to separate language file, e.g. using Ordbok.
     # Have these classes being empty bodied and get strings directly in BaseTool
     # based on identifier.
-    STS_PICK_TARGET   = "Click primary solid group/component to add to.".freeze
+    STS_PICK_TARGET   = "Click target solid group/component to add to.".freeze
     STS_PICK_MODIFIER =
-      "Click secondary solid group/component to add with. Esc = Select new primary solid.".freeze
+      "Click modifier solid group/component to add with. Esc = Select new target solid.".freeze
     STS_DONE_INSTANT  =
       "Done. By instead activating tool without a selection you can chose which component to alter.".freeze
     OPERATOR_NAME     = "Union".freeze
@@ -298,28 +298,24 @@ module Tools
 
   # Subtract Tool.
   class Subtract < MultiTarget
-    STS_PICK_TARGET   = "Click primary solid group/component to subtract from.".freeze
-    STS_PICK_MODIFIER = "Click secondary solid group/component to subtract with. Esc = Select new primary solid.".freeze
-    STS_DONE_INSTANT  =
-      "Done. By instead activating tool without a selection you can chose what to subtract from what.".freeze
+    STS_PICK_TARGET   = "Click target solid group/component to subtract from.".freeze
+    STS_PICK_MODIFIER = "Click modifier solid group/component to subtract with. Esc = Select new target solid.".freeze
     OPERATOR_NAME     = "Subtract".freeze
   end
 
   # Trim Tool.
   class Trim < MultiTarget
-    STS_PICK_TARGET   = "Click primary solid group/component to trim.".freeze
-    STS_PICK_MODIFIER = "Click secondary solid group/component to trim away. Esc = Select new primary solid.".freeze
-    STS_DONE_INSTANT  =
-      "Done. By instead activating tool without a selection you can chose what to trim from what.".freeze
+    STS_PICK_TARGET   = "Click target solid group/component to trim.".freeze
+    STS_PICK_MODIFIER = "Click modifier solid group/component to trim away. Esc = Select new target solid.".freeze
     OPERATOR_NAME     = "Trim".freeze
   end
 
   # Intersect Tool.
   class Intersect < Base
-    STS_PICK_TARGET   = "Click original solid group/component to intersect.".freeze
-    STS_PICK_MODIFIER = "Click secondary solid group/component intersect with. Esc = Select new primary solid.".freeze
+    STS_PICK_TARGET   = "Click target solid group/component to intersect.".freeze
+    STS_PICK_MODIFIER = "Click modifier solid group/component intersect with. Esc = Select new target solid.".freeze
     STS_DONE_INSTANT  =
-      "Done. By instead activating tool without a selection you can chose what solid to modify.".freeze
+      "Done. By instead activating tool without a selection you can chose what solid to alter.".freeze
     OPERATOR_NAME     = "Intersect".freeze
   end
 

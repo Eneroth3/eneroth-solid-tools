@@ -41,28 +41,28 @@ module SolidTools
       cmd = UI::Command.new("Union") { Tools::Union.perform_or_activate }
       cmd.large_icon = cmd.small_icon = File.join(PLUGIN_DIR, "images", "union#{icon_file_extension}")
       cmd.tooltip = "Union"
-      cmd.status_bar_text = "Add one solid group or component to another."
+      cmd.status_bar_text = "Unite solid groups/components to larger ones."
       cmd.set_validation_proc { Tools::Union.active? ? MF_CHECKED : MF_UNCHECKED }
       tb.add_item cmd
 
       cmd = UI::Command.new("Subtract") { Tools::Subtract.perform_or_activate }
       cmd.large_icon = cmd.small_icon = File.join(PLUGIN_DIR, "images", "subtract#{icon_file_extension}")
       cmd.tooltip = "Subtract"
-      cmd.status_bar_text = "Subtract one solid group or component from another."
+      cmd.status_bar_text = "Subtract solid groups/components."
       cmd.set_validation_proc { Tools::Subtract.active? ? MF_CHECKED : MF_UNCHECKED }
       tb.add_item cmd
 
       cmd = UI::Command.new("Trim") { Tools::Trim.perform_or_activate }
       cmd.large_icon = cmd.small_icon = File.join(PLUGIN_DIR, "images", "trim#{icon_file_extension}")
       cmd.tooltip = "Trim"
-      cmd.status_bar_text = "Trim away one solid group or component from another."
+      cmd.status_bar_text = "Trim away solid groups/components."
       cmd.set_validation_proc { Tools::Trim.active? ? MF_CHECKED : MF_UNCHECKED }
       tb.add_item cmd
 
       cmd = UI::Command.new("Intersect") { Tools::Intersect.perform_or_activate }
       cmd.large_icon = cmd.small_icon = File.join(PLUGIN_DIR, "images", "intersect#{icon_file_extension}")
       cmd.tooltip = "Intersect"
-      cmd.status_bar_text = "Find intersection between solid groups or components."
+      cmd.status_bar_text = "Find overlap between solid groups/components."
       cmd.set_validation_proc { Tools::Intersect.active? ? MF_CHECKED : MF_UNCHECKED }
       tb.add_item cmd
 
