@@ -72,6 +72,11 @@ module Tools
     end
 
     # @see http://ruby.sketchup.com/Sketchup/Tool.html
+    def getInstructorContentDirectory
+      File.join(PLUGIN_DIR, "instructor", "#{self.class.identifier}.html")
+    end
+
+    # @see http://ruby.sketchup.com/Sketchup/Tool.html
     def onLButtonDown(_flags, x, y, _view)
       @ph.do_pick(x, y)
       picked = @ph.best_picked

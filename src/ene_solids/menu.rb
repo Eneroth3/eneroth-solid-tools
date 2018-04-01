@@ -55,7 +55,7 @@ module SolidTools
       cmd = UI::Command.new("Trim") { Tools::Trim.perform_or_activate }
       cmd.large_icon = cmd.small_icon = File.join(PLUGIN_DIR, "images", "trim#{icon_file_extension}")
       cmd.tooltip = "Trim"
-      cmd.status_bar_text = "Trim away solid groups/components."
+      cmd.status_bar_text = "Trim solid groups/components to other solids."
       cmd.set_validation_proc { Tools::Trim.active? ? MF_CHECKED : MF_UNCHECKED }
       tb.add_item cmd
 
