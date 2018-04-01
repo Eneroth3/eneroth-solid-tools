@@ -79,10 +79,7 @@ module SolidOperations
     return false unless solid?(target) && solid?(modifier)
     target.make_unique if target.is_a?(Sketchup::Group)
 
-    # Copy the content of modifier into a temporary group where it can safely
-    # modified without altering any other instances.
-    # make_unique is not used since this would create a component visible in
-    # the component browser if modifier is a component.
+    # Use a temporary copy of modifier instead of altering original.
     temp_group = target.parent.entities.add_group
     merge_into(temp_group, modifier)
     modifier = temp_group
@@ -90,34 +87,30 @@ module SolidOperations
     target_ents = definition(target).entities
     modifier_ents = definition(modifier).entities
 
-    # Remember co-planar edges for later.
-    # FIXME: References in modifier are lost in SU2017.
-    old_coplanar = find_coplanar_edges(target_ents)
-    old_coplanar += find_coplanar_edges(modifier_ents)
-
-    # Double intersect so intersection edges appear in both contexts.
     add_intersection_edges(target, modifier)
 
+    # Keep references to edges binding overlapping faces so they can later be
+    # removed and the faces merged. Use vertices as references as the edges are
+    # deleted and replaced in merge_into.
+    overlapping_edges = find_corresponding_faces(target, modifier, nil)[0].flat_map(&:edges).map(&:vertices)
+
     # Remove faces in both containers that are inside the other one's solid.
-    # Remove faces that exists in both groups and have opposite orientation.
+    # Remove faces that exists in both containers and have opposite orientation.
     erase1 = find_faces(target, modifier, true, false)
     erase2 = find_faces(modifier, target, true, false)
-    corresponding = find_corresponding_faces(target, modifier, false)
-    erase1.concat(corresponding.map(&:first))
-    erase2.concat(corresponding.map(&:last))
-    target_ents.erase_entities(erase1)
-    modifier_ents.erase_entities(erase2)
+    c_faces1, c_faces2 = find_corresponding_faces(target, modifier, false)
+    erase1.concat(c_faces1)
+    erase2.concat(c_faces2)
+    erase_faces_with_edges(erase1)
+    erase_faces_with_edges(erase2)
 
     merge_into(target, modifier)
 
-    # Purge edges no longer not binding 2 edges.
-    purge_edges(target_ents)
-
-    # Remove co-planar edges that occurred from the intersection and keep
-    # those that already existed.
-    all_coplanar = find_coplanar_edges(target_ents)
-    new_coplanar = all_coplanar - old_coplanar
-    target_ents.erase_entities(new_coplanar)
+    # Merge faces between target and modifier by removing co-planar edges around
+    # their overlapping faces.
+    overlapping_edges.select! { |vs| vs.all?(&:valid?) }
+    overlapping_edges.map! { |vs| vs[0].common_edge(vs[1]) }.compact!
+    target_ents.erase_entities(find_coplanar_edges(overlapping_edges))
 
     weld_hack(target_ents)
 
@@ -150,10 +143,7 @@ module SolidOperations
     return false unless solid?(target) && solid?(modifier)
     target.make_unique if target.is_a?(Sketchup::Group)
 
-    # Copy the content of modifier into a temporary group where it can safely
-    # modified without altering any other instances.
-    # make_unique is not used since this would create a component visible in
-    # the component browser if modifier is a component.
+    # Use a temporary copy of modifier instead of altering original.
     temp_group = target.parent.entities.add_group
     merge_into(temp_group, modifier, true)
     modifier = temp_group
@@ -161,38 +151,32 @@ module SolidOperations
     target_ents = definition(target).entities
     modifier_ents = definition(modifier).entities
 
-    # Remember co-planar edges for later.
-    # FIXME: References in modifier are lost in SU2017.
-    old_coplanar = find_coplanar_edges(target_ents)
-    old_coplanar += find_coplanar_edges(modifier_ents)
-
-    # Double intersect so intersection edges appear in both contexts.
     add_intersection_edges(target, modifier)
+
+    # Keep references to edges binding overlapping faces so they can later be
+    # removed and the faces merged. Use vertices as references as the edges are
+    # deleted and replaced in merge_into.
+    overlapping_edges = find_corresponding_faces(target, modifier, nil)[0].flat_map(&:edges).map(&:vertices)
 
     # Remove faces in target that are inside the modifier and faces in
     # modifier that are outside target.
-    # Remove faces that exists in both groups and have opposite orientation.
+    # Remove faces that exists in both containers and have opposite orientation.
     erase1 = find_faces(target, modifier, true, false)
     erase2 = find_faces(modifier, target, false, false)
-    corresponding = find_corresponding_faces(target, modifier, true)
-    erase1.concat(corresponding.map(&:first))
-    erase2.concat(corresponding.map(&:last))
-    target_ents.erase_entities(erase1)
-    modifier_ents.erase_entities(erase2)
+    c_faces1, c_faces2 = find_corresponding_faces(target, modifier, true)
+    erase1.concat(c_faces1)
+    erase2.concat(c_faces2)
+    erase_faces_with_edges(erase1)
+    erase_faces_with_edges(erase2)
 
-    # Reverse all faces in modifier
     modifier_ents.each { |f| f.reverse! if f.is_a? Sketchup::Face }
-
     merge_into(target, modifier)
 
-    # Purge edges no longer not binding 2 edges.
-    purge_edges(target_ents)
-
-    # Remove co-planar edges that occurred from the intersection and keep
-    # those that already existed.
-    all_coplanar = find_coplanar_edges(target_ents)
-    new_coplanar = all_coplanar - old_coplanar
-    target_ents.erase_entities(new_coplanar)
+    # Merge faces between target and modifier by removing co-planar edges around
+    # their overlapping faces.
+    overlapping_edges.select! { |vs| vs.all?(&:valid?) }
+    overlapping_edges.map! { |vs| vs[0].common_edge(vs[1]) }.compact!
+    target_ents.erase_entities(find_coplanar_edges(overlapping_edges))
 
     weld_hack(target_ents)
 
@@ -210,10 +194,7 @@ module SolidOperations
     return false unless solid?(target) && solid?(modifier)
     target.make_unique if target.is_a?(Sketchup::Group)
 
-    # Copy the content of modifier into a temporary group where it can safely
-    # modified without altering any other instances.
-    # make_unique is not used since this would create a component visible in
-    # the component browser if modifier is a component.
+    # Use a temporary copy of modifier instead of altering original.
     temp_group = target.parent.entities.add_group
     merge_into(temp_group, modifier)
     modifier = temp_group
@@ -221,34 +202,30 @@ module SolidOperations
     target_ents = definition(target).entities
     modifier_ents = definition(modifier).entities
 
-    # Remember co-planar edges for later.
-    # FIXME: References in modifier are lost in SU2017.
-    old_coplanar = find_coplanar_edges(target_ents)
-    old_coplanar += find_coplanar_edges(modifier_ents)
-
-    # Double intersect so intersection edges appear in both contexts.
     add_intersection_edges(target, modifier)
 
+    # Keep references to edges binding overlapping faces so they can later be
+    # removed and the faces merged. Use vertices as references as the edges are
+    # deleted and replaced in merge_into.
+    overlapping_edges = find_corresponding_faces(target, modifier, nil)[0].flat_map(&:edges).map(&:vertices)
+
     # Remove faces in both containers that are outside the other one's solid.
-    # Remove faces that exists in both groups and have opposite orientation.
+    # Remove faces that exists in both containers and have opposite orientation.
     erase1 = find_faces(target, modifier, false, false)
     erase2 = find_faces(modifier, target, false, false)
-    corresponding = find_corresponding_faces(target, modifier, false)
-    erase1.concat(corresponding.map(&:first))
-    erase2.concat(corresponding.map(&:last))
-    target_ents.erase_entities(erase1)
-    modifier_ents.erase_entities(erase2)
+    c_faces1, c_faces2 = find_corresponding_faces(target, modifier, false)
+    erase1.concat(c_faces1)
+    erase2.concat(c_faces2)
+    erase_faces_with_edges(erase1)
+    erase_faces_with_edges(erase2)
 
     merge_into(target, modifier)
 
-    # Purge edges no longer not binding 2 edges.
-    purge_edges(target_ents)
-
-    # Remove co-planar edges that occurred from the intersection and keep
-    # those that already existed.
-    all_coplanar = find_coplanar_edges(target_ents)
-    new_coplanar = all_coplanar - old_coplanar
-    target_ents.erase_entities(new_coplanar)
+    # Merge faces between target and modifier by removing co-planar edges around
+    # their overlapping faces.
+    overlapping_edges.select! { |vs| vs.all?(&:valid?) }
+    overlapping_edges.map! { |vs| vs[0].common_edge(vs[1]) }.compact!
+    target_ents.erase_entities(find_coplanar_edges(overlapping_edges))
 
     weld_hack(target_ents)
 
@@ -376,7 +353,14 @@ module SolidOperations
     # These are removed when validity check run.
     return if face.area.zero?
 
-    points = face.mesh.polygon_points_at(1)
+    # PolygonMesh.polygon_points in rare situations return points on a line,
+    # which would lead to a point on the edge boundary being returned rather
+    # than one within face.
+    index = 1
+    begin
+      points = face.mesh.polygon_points_at(index)
+      index += 1
+    end while points[0].on_line?(points[1], points[2])
 
     Geom.linear_combination(
       0.5,
@@ -418,10 +402,10 @@ module SolidOperations
   #   orientation, false only returns faces with opposite orientation and nil
   #   skips orientation check.
   #
-  # @return [Array<Array(Sketchup::Face, Sketchup::Face)>] First face in sub
-  #   array is from container1, second one is from container2.
+  # @return [Array(Array<Sketchup::Face>, Array<Sketchup::Face>)] First array is
+  #   from container1, second one is from container2.
   def self.find_corresponding_faces(container1, container2, orientation)
-    faces = []
+    faces = [[], []]
 
     definition(container1).entities.grep(Sketchup::Face) do |face1|
       normal1 = transform_as_normal(face1.normal, container1.transformation)
@@ -436,7 +420,8 @@ module SolidOperations
           next if normal1.samedirection?(normal2) != orientation
         end
 
-        faces << [face1, face2]
+        faces[0] << face1
+        faces[1] << face2
       end
     end
 
@@ -483,12 +468,13 @@ module SolidOperations
 
   # Find coplanar edges with same material and layers on both sides.
   #
+  # Stray edges included.
+  #
   # @param entities [Sketchup::Entities]
   #
   # @return [Array<Sketchup::Edge>]
   def self.find_coplanar_edges(entities)
-    entities.select do |e|
-      next unless e.is_a?(Sketchup::Edge)
+    entities.grep(Sketchup::Edge).select do |e|
       next unless e.faces.size == 2
 
       # This check gives false positive on very small angles.
@@ -538,6 +524,20 @@ module SolidOperations
     entities.grep(Sketchup::Edge).select { |e| e.faces.size == 1 }
   end
   private_class_method :naked_edges
+
+  # Erase faces along with their binding edges that doesn't bind any other
+  # faces.
+  #
+  # @param faces [Array<Face>]
+  #
+  # @return [Void]
+  def self.erase_faces_with_edges(faces)
+    return if faces.empty?
+    erase = faces + (faces.flat_map(&:edges).select { |e| (e.faces - faces).empty? } )
+    erase.first.parent.entities.erase_entities(erase)
+
+    nil
+  end
 
   # Find mesh geometry (edges and faces) in Entities collection.
   #
