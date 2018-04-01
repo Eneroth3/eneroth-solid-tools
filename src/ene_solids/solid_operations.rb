@@ -104,10 +104,8 @@ module SolidOperations
     c_faces1, c_faces2 = find_corresponding_faces(target, modifier, false)
     erase1.concat(c_faces1)
     erase2.concat(c_faces2)
-    erase1.concat(erase1.flat_map(&:edges).select { |e| (e.faces - erase1).empty? } )
-    erase2.concat(erase2.flat_map(&:edges).select { |e| (e.faces - erase2).empty? } )
-    target_ents.erase_entities(erase1)
-    modifier_ents.erase_entities(erase2)
+    erase_faces_with_edges(erase1)
+    erase_faces_with_edges(erase2)
 
     merge_into(target, modifier)
 
@@ -175,10 +173,8 @@ module SolidOperations
     c_faces1, c_faces2 = find_corresponding_faces(target, modifier, true)
     erase1.concat(c_faces1)
     erase2.concat(c_faces2)
-    erase1.concat(erase1.flat_map(&:edges).select { |e| (e.faces - erase1).empty? } )
-    erase2.concat(erase2.flat_map(&:edges).select { |e| (e.faces - erase2).empty? } )
-    target_ents.erase_entities(erase1)
-    modifier_ents.erase_entities(erase2)
+    erase_faces_with_edges(erase1)
+    erase_faces_with_edges(erase2)
 
     # Reverse all faces in modifier
     modifier_ents.each { |f| f.reverse! if f.is_a? Sketchup::Face }
@@ -233,10 +229,8 @@ module SolidOperations
     c_faces1, c_faces2 = find_corresponding_faces(target, modifier, false)
     erase1.concat(c_faces1)
     erase2.concat(c_faces2)
-    erase1.concat(erase1.flat_map(&:edges).select { |e| (e.faces - erase1).empty? } )
-    erase2.concat(erase2.flat_map(&:edges).select { |e| (e.faces - erase2).empty? } )
-    target_ents.erase_entities(erase1)
-    modifier_ents.erase_entities(erase2)
+    erase_faces_with_edges(erase1)
+    erase_faces_with_edges(erase2)
 
     merge_into(target, modifier)
 
@@ -537,6 +531,20 @@ module SolidOperations
     entities.grep(Sketchup::Edge).select { |e| e.faces.size == 1 }
   end
   private_class_method :naked_edges
+
+  # Erase faces along with their binding edges that doesn't bind any other
+  # faces.
+  #
+  # @param faces [Array<Face>]
+  #
+  # @return [Void]
+  def self.erase_faces_with_edges(faces)
+    return if faces.empty?
+    erase = faces + (faces.flat_map(&:edges).select { |e| (e.faces - faces).empty? } )
+    erase.first.parent.entities.erase_entities(erase)
+
+    nil
+  end
 
   # Find mesh geometry (edges and faces) in Entities collection.
   #
