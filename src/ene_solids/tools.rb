@@ -197,6 +197,7 @@ module Tools
     # Pick modifier and perform operation with it.
     def pick_modifier(solid)
       self.class.operate(@target, solid)
+      @target = nil unless @target.valid?
     end
 
     # Pick a solid to use as target.
@@ -259,6 +260,7 @@ module Tools
     # Pick modifier and perform operation with it.
     def pick_modifier(solid)
       self.class.operate(@targets, solid)
+      @targets.select!(&:valid?)
     end
 
     # Pick a solid to use as target.
