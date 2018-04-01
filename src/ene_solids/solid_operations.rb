@@ -353,7 +353,14 @@ module SolidOperations
     # These are removed when validity check run.
     return if face.area.zero?
 
-    points = face.mesh.polygon_points_at(1)
+    # PolygonMesh.polygon_points in rare situations return points on a line,
+    # which would lead to a point on the edge boundary being returned rather
+    # than one within face.
+    index = 1
+    begin
+      points = face.mesh.polygon_points_at(index)
+      index += 1
+    end while points[0].on_line?(points[1], points[2])
 
     Geom.linear_combination(
       0.5,
