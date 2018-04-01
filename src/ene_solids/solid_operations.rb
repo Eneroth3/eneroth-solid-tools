@@ -476,6 +476,8 @@ module SolidOperations
   def self.find_coplanar_edges(entities)
     entities.grep(Sketchup::Edge).select do |e|
       next unless e.faces.size == 2
+      next unless e.faces[0].material == e.faces[1].material
+      next unless e.faces[0].layer == e.faces[1].layer
 
       # This check gives false positive on very small angles.
       next unless e.faces[0].normal.parallel?(e.faces[1].normal)
