@@ -102,6 +102,8 @@ module SolidOperations
     # Remove faces that exists in both groups and have opposite orientation.
     erase1 = find_faces(target, modifier, true, false)
     erase2 = find_faces(modifier, target, true, false)
+    erase1.concat(erase1.flat_map(&:edges).select { |e| (e.faces - erase1).empty? } )
+    erase2.concat(erase2.flat_map(&:edges).select { |e| (e.faces - erase2).empty? } )
     corresponding = find_corresponding_faces(target, modifier, false)
     erase1.concat(corresponding.map(&:first))
     erase2.concat(corresponding.map(&:last))
@@ -109,9 +111,6 @@ module SolidOperations
     modifier_ents.erase_entities(erase2)
 
     merge_into(target, modifier)
-
-    # Purge edges no longer not binding 2 edges.
-    purge_edges(target_ents)
 
     # Remove co-planar edges that occurred from the intersection and keep
     # those that already existed.
