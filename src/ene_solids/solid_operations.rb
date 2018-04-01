@@ -489,7 +489,9 @@ module SolidOperations
   def self.find_coplanar_edges(entities)
     entities.select do |e|
       next unless e.is_a?(Sketchup::Edge)
-      next true if e.faces.size == 1
+      # Unwanted stray edges are sometimes formed in previous steps from
+      # partially overlapping faces.
+      next true if e.faces.size == 0
       next unless e.faces.size == 2
 
       # This check gives false positive on very small angles.
