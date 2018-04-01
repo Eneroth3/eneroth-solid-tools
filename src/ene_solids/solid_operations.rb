@@ -101,11 +101,11 @@ module SolidOperations
     # Remove faces that exists in both groups and have opposite orientation.
     erase1 = find_faces(target, modifier, true, false)
     erase2 = find_faces(modifier, target, true, false)
-    erase1.concat(erase1.flat_map(&:edges).select { |e| (e.faces - erase1).empty? } )
-    erase2.concat(erase2.flat_map(&:edges).select { |e| (e.faces - erase2).empty? } )
     c_faces1, c_faces2 = find_corresponding_faces(target, modifier, false)
     erase1.concat(c_faces1)
     erase2.concat(c_faces2)
+    erase1.concat(erase1.flat_map(&:edges).select { |e| (e.faces - erase1).empty? } )
+    erase2.concat(erase2.flat_map(&:edges).select { |e| (e.faces - erase2).empty? } )
     target_ents.erase_entities(erase1)
     modifier_ents.erase_entities(erase2)
 
@@ -172,11 +172,11 @@ module SolidOperations
     # Remove faces that exists in both groups and have opposite orientation.
     erase1 = find_faces(target, modifier, true, false)
     erase2 = find_faces(modifier, target, false, false)
-    erase1.concat(erase1.flat_map(&:edges).select { |e| (e.faces - erase1).empty? } )
-    erase2.concat(erase2.flat_map(&:edges).select { |e| (e.faces - erase2).empty? } )
     c_faces1, c_faces2 = find_corresponding_faces(target, modifier, true)
     erase1.concat(c_faces1)
     erase2.concat(c_faces2)
+    erase1.concat(erase1.flat_map(&:edges).select { |e| (e.faces - erase1).empty? } )
+    erase2.concat(erase2.flat_map(&:edges).select { |e| (e.faces - erase2).empty? } )
     target_ents.erase_entities(erase1)
     modifier_ents.erase_entities(erase2)
 
@@ -230,11 +230,11 @@ module SolidOperations
     # Remove faces that exists in both groups and have opposite orientation.
     erase1 = find_faces(target, modifier, false, false)
     erase2 = find_faces(modifier, target, false, false)
-    erase1.concat(erase1.flat_map(&:edges).select { |e| (e.faces - erase1).empty? } )
-    erase2.concat(erase2.flat_map(&:edges).select { |e| (e.faces - erase2).empty? } )
     c_faces1, c_faces2 = find_corresponding_faces(target, modifier, false)
     erase1.concat(c_faces1)
     erase2.concat(c_faces2)
+    erase1.concat(erase1.flat_map(&:edges).select { |e| (e.faces - erase1).empty? } )
+    erase2.concat(erase2.flat_map(&:edges).select { |e| (e.faces - erase2).empty? } )
     target_ents.erase_entities(erase1)
     modifier_ents.erase_entities(erase2)
 
@@ -487,11 +487,7 @@ module SolidOperations
   #
   # @return [Array<Sketchup::Edge>]
   def self.find_coplanar_edges(entities)
-    entities.select do |e|
-      next unless e.is_a?(Sketchup::Edge)
-      # Unwanted stray edges are sometimes formed in previous steps from
-      # partially overlapping faces.
-      next true if e.faces.size == 0
+    entities.grep(Sketchup::Edge).select do |e|
       next unless e.faces.size == 2
 
       # This check gives false positive on very small angles.
