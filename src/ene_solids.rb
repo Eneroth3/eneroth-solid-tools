@@ -30,7 +30,7 @@ module SolidTools
   EXTENSION.description =
     "Solid union, subtract and trim tool. Designed to be more consistent to "\
     "other SketchUp tools than SketchUp's native solid tools."
-  EXTENSION.version     = "2.0.1"
+  EXTENSION.version     = "3.0.0"
   EXTENSION.copyright   = "2018, #{EXTENSION.creator}"
   Sketchup.register_extension(EXTENSION, true)
 
