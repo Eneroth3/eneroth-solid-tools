@@ -1,7 +1,7 @@
 module Eneroth
 module SolidTools
 
-Sketchup.require(File.join(PLUGIN_DIR, "solid_operations"))
+Sketchup.require File.join(PLUGIN_DIR, "solid_operations")
 
 # Solid Operations on multiple containers.
 #

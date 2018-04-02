@@ -7,7 +7,7 @@ module SolidTools
     raise msg
   end
 
-  Sketchup.require(File.join(PLUGIN_DIR, "menu"))
+  Sketchup.require File.join(PLUGIN_DIR, "menu")
 
   # Reload extension.
   #
