@@ -66,6 +66,8 @@ module SolidTools
       cmd.set_validation_proc { Tools::Intersect.active? ? MF_CHECKED : MF_UNCHECKED }
       tb.add_item cmd
 
+      tb.restore
+
     else
       UI.messagebox("Eneroth Solids Tools in Extension Warehouse is only available for SketchUp Pro.")
     end
